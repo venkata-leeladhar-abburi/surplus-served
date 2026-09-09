@@ -1,0 +1,43 @@
+name: ss_design_system
+description: Surplus → Served design system — tokens, theme and components for the Flutter app.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  # Illustrations (§09) and the logo (§02), cropped from the design document
+  # by design/tools/extract_artwork.py.
+  assets:
+    - assets/illustrations/
+    - assets/brand/
+
+  # Fonts are bundled, not fetched at runtime: an NGO on a weak connection
+  # must never wait on a font download to read a pickup window (§10.9, §15).
+  # Variable fonts (OFL). One file per family; weight is selected at render
+  # time through TextStyle.fontVariations, which the token generator emits.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Variable.ttf
+    - family: Lora
+      fonts:
+        - asset: assets/fonts/Lora-Variable.ttf
+        - asset: assets/fonts/Lora-Italic-Variable.ttf
+          style: italic
+    # Telugu parity (§14). Inter has no Telugu coverage, so this is the
+    # fallback every SsTypography style declares.
+    - family: NotoSansTelugu
+      fonts:
+        - asset: assets/fonts/NotoSansTelugu-Variable.ttf

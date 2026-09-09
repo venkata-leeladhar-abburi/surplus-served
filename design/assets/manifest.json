@@ -1,0 +1,368 @@
+{
+  "illustrations": [
+    {
+      "name": "appPromotion",
+      "set": "promo",
+      "caption": "Download the app \u2014 be part of the change",
+      "asset": "assets/illustrations/appPromotion.png",
+      "width": 122,
+      "height": 141
+    },
+    {
+      "name": "cleanerPlanet",
+      "set": "community",
+      "caption": "A cleaner, greener planet",
+      "asset": "assets/illustrations/cleanerPlanet.png",
+      "width": 158,
+      "height": 86
+    },
+    {
+      "name": "communityTrust",
+      "set": "trust",
+      "caption": "Community you can trust",
+      "asset": "assets/illustrations/communityTrust.png",
+      "width": 120,
+      "height": 72
+    },
+    {
+      "name": "deliveryCompleted",
+      "set": "success",
+      "caption": "Delivery completed \u2014 great job!",
+      "asset": "assets/illustrations/deliveryCompleted.png",
+      "width": 110,
+      "height": 88
+    },
+    {
+      "name": "foodReceived",
+      "set": "success",
+      "caption": "Food received \u2014 thank you!",
+      "asset": "assets/illustrations/foodReceived.png",
+      "width": 127,
+      "height": 90
+    },
+    {
+      "name": "foodSafety",
+      "set": "trust",
+      "caption": "Food safety matters",
+      "asset": "assets/illustrations/foodSafety.png",
+      "width": 117,
+      "height": 87
+    },
+    {
+      "name": "goodFoodShared",
+      "set": "sustainability",
+      "caption": "Good food should be shared",
+      "asset": "assets/illustrations/goodFoodShared.png",
+      "width": 103,
+      "height": 108
+    },
+    {
+      "name": "healthierPlanet",
+      "set": "onboarding",
+      "caption": "A healthier planet",
+      "asset": "assets/illustrations/healthierPlanet.png",
+      "width": 111,
+      "height": 129
+    },
+    {
+      "name": "impactUnlocked",
+      "set": "success",
+      "caption": "Impact unlocked \u2014 you're making a difference",
+      "asset": "assets/illustrations/impactUnlocked.png",
+      "width": 117,
+      "height": 87
+    },
+    {
+      "name": "leafMotif",
+      "set": "brand",
+      "caption": "Leaf motif",
+      "asset": "assets/illustrations/leafMotif.png",
+      "width": 51,
+      "height": 69
+    },
+    {
+      "name": "lessFoodWaste",
+      "set": "onboarding",
+      "caption": "Less food waste",
+      "asset": "assets/illustrations/lessFoodWaste.png",
+      "width": 110,
+      "height": 114
+    },
+    {
+      "name": "letsGetStarted",
+      "set": "onboarding",
+      "caption": "Let's get started",
+      "asset": "assets/illustrations/letsGetStarted.png",
+      "width": 99,
+      "height": 132
+    },
+    {
+      "name": "mealsThatMatter",
+      "set": "community",
+      "caption": "Meals that matter",
+      "asset": "assets/illustrations/mealsThatMatter.png",
+      "width": 180,
+      "height": 84
+    },
+    {
+      "name": "noFoodAvailable",
+      "set": "empty",
+      "caption": "No food available \u2014 check back later",
+      "asset": "assets/illustrations/noFoodAvailable.png",
+      "width": 118,
+      "height": 93
+    },
+    {
+      "name": "noRequestsYet",
+      "set": "empty",
+      "caption": "No requests yet \u2014 be the first to request",
+      "asset": "assets/illustrations/noRequestsYet.png",
+      "width": 110,
+      "height": 100
+    },
+    {
+      "name": "noResultsFound",
+      "set": "empty",
+      "caption": "No results found \u2014 try a different location or search",
+      "asset": "assets/illustrations/noResultsFound.png",
+      "width": 94,
+      "height": 91
+    },
+    {
+      "name": "nothingHereYet",
+      "set": "empty",
+      "caption": "Nothing here yet \u2014 good things come soon",
+      "asset": "assets/illustrations/nothingHereYet.png",
+      "width": 138,
+      "height": 122
+    },
+    {
+      "name": "nourishPeople",
+      "set": "sustainability",
+      "caption": "Nourish people",
+      "asset": "assets/illustrations/nourishPeople.png",
+      "width": 94,
+      "height": 102
+    },
+    {
+      "name": "offline",
+      "set": "error",
+      "caption": "You're offline \u2014 check your connection",
+      "asset": "assets/illustrations/offline.png",
+      "width": 137,
+      "height": 80
+    },
+    {
+      "name": "onboardingWelcome",
+      "set": "onboarding",
+      "caption": "Welcome to a kinder tomorrow",
+      "asset": "assets/illustrations/onboardingWelcome.png",
+      "width": 129,
+      "height": 129
+    },
+    {
+      "name": "progressAllocated",
+      "set": "progress",
+      "caption": "Allocated",
+      "asset": "assets/illustrations/progressAllocated.png",
+      "width": 81,
+      "height": 77
+    },
+    {
+      "name": "progressCollected",
+      "set": "progress",
+      "caption": "Collected",
+      "asset": "assets/illustrations/progressCollected.png",
+      "width": 87,
+      "height": 80
+    },
+    {
+      "name": "progressInTransit",
+      "set": "progress",
+      "caption": "In transit",
+      "asset": "assets/illustrations/progressInTransit.png",
+      "width": 78,
+      "height": 75
+    },
+    {
+      "name": "progressSubmitted",
+      "set": "progress",
+      "caption": "Submitted",
+      "asset": "assets/illustrations/progressSubmitted.png",
+      "width": 64,
+      "height": 75
+    },
+    {
+      "name": "progressUnderReview",
+      "set": "progress",
+      "caption": "Under review",
+      "asset": "assets/illustrations/progressUnderReview.png",
+      "width": 63,
+      "height": 80
+    },
+    {
+      "name": "protectPlanet",
+      "set": "sustainability",
+      "caption": "Protect our planet",
+      "asset": "assets/illustrations/protectPlanet.png",
+      "width": 110,
+      "height": 108
+    },
+    {
+      "name": "realPeople",
+      "set": "community",
+      "caption": "Real people. Real change.",
+      "asset": "assets/illustrations/realPeople.png",
+      "width": 168,
+      "height": 87
+    },
+    {
+      "name": "reduceFoodWaste",
+      "set": "sustainability",
+      "caption": "Reduce food waste",
+      "asset": "assets/illustrations/reduceFoodWaste.png",
+      "width": 98,
+      "height": 116
+    },
+    {
+      "name": "requestSubmitted",
+      "set": "success",
+      "caption": "Request submitted \u2014 we'll keep you updated",
+      "asset": "assets/illustrations/requestSubmitted.png",
+      "width": 90,
+      "height": 83
+    },
+    {
+      "name": "roleAdmin",
+      "set": "role",
+      "caption": "I'm an admin \u2014 manage and monitor",
+      "asset": "assets/illustrations/roleAdmin.png",
+      "width": 129,
+      "height": 126
+    },
+    {
+      "name": "roleDonor",
+      "set": "role",
+      "caption": "I'm a donor \u2014 share surplus food",
+      "asset": "assets/illustrations/roleDonor.png",
+      "width": 132,
+      "height": 132
+    },
+    {
+      "name": "roleReceiver",
+      "set": "role",
+      "caption": "I'm a receiver \u2014 get food support",
+      "asset": "assets/illustrations/roleReceiver.png",
+      "width": 129,
+      "height": 126
+    },
+    {
+      "name": "roleVolunteer",
+      "set": "role",
+      "caption": "I'm a volunteer \u2014 deliver hope",
+      "asset": "assets/illustrations/roleVolunteer.png",
+      "width": 135,
+      "height": 129
+    },
+    {
+      "name": "safeFood",
+      "set": "trust",
+      "caption": "Safe food, healthy people",
+      "asset": "assets/illustrations/safeFood.png",
+      "width": 115,
+      "height": 75
+    },
+    {
+      "name": "smallActionsBigImpact",
+      "set": "community",
+      "caption": "Small actions. Big impact.",
+      "asset": "assets/illustrations/smallActionsBigImpact.png",
+      "width": 182,
+      "height": 94
+    },
+    {
+      "name": "somethingWentWrong",
+      "set": "error",
+      "caption": "Something went wrong \u2014 please try again",
+      "asset": "assets/illustrations/somethingWentWrong.png",
+      "width": 138,
+      "height": 85
+    },
+    {
+      "name": "strongerCommunities",
+      "set": "onboarding",
+      "caption": "Stronger communities",
+      "asset": "assets/illustrations/strongerCommunities.png",
+      "width": 120,
+      "height": 120
+    },
+    {
+      "name": "todaysSurplus",
+      "set": "community",
+      "caption": "Today's surplus. Tomorrow's hope.",
+      "asset": "assets/illustrations/todaysSurplus.png",
+      "width": 189,
+      "height": 84
+    },
+    {
+      "name": "togetherCommunities",
+      "set": "community",
+      "caption": "Together for stronger communities",
+      "asset": "assets/illustrations/togetherCommunities.png",
+      "width": 184,
+      "height": 78
+    },
+    {
+      "name": "verifiedDonor",
+      "set": "trust",
+      "caption": "Verified donor, trusted food",
+      "asset": "assets/illustrations/verifiedDonor.png",
+      "width": 118,
+      "height": 90
+    }
+  ],
+  "brand": [
+    {
+      "name": "logoHorizontal",
+      "caption": "Surplus \u2192 Served \u2014 primary horizontal logo",
+      "asset": "assets/brand/logoHorizontal.png",
+      "width": 255,
+      "height": 54
+    },
+    {
+      "name": "logoStacked",
+      "caption": "Surplus \u2192 Served \u2014 stacked logo",
+      "asset": "assets/brand/logoStacked.png",
+      "width": 115,
+      "height": 115
+    },
+    {
+      "name": "logoIcon",
+      "caption": "Surplus \u2192 Served \u2014 icon only",
+      "asset": "assets/brand/logoIcon.png",
+      "width": 87,
+      "height": 84
+    },
+    {
+      "name": "leafMark",
+      "caption": "Leaf mark",
+      "asset": "assets/brand/leafMark.png",
+      "width": 78,
+      "height": 86
+    },
+    {
+      "name": "movementArrow",
+      "caption": "Movement thread \u2014 the arrow that shows food in motion",
+      "asset": "assets/brand/movementArrow.png",
+      "width": 81,
+      "height": 70
+    }
+  ],
+  "source": {
+    "document": "Surplus-> Served.pdf",
+    "transparentSheet": "illustrations-sheet-transparent.png",
+    "illustrationPage": 18,
+    "brandPage": 2,
+    "note": "Cropped from the flattened design PDF. Native resolution is the ceiling \u2014 see the header of design/tools/extract_artwork.py."
+  }
+}

@@ -1,0 +1,71 @@
+name: Design system
+
+on:
+  push:
+    paths: ['design/**', 'packages/**', '.github/workflows/design-system.yml']
+  pull_request:
+    paths: ['design/**', 'packages/**']
+
+jobs:
+  tokens:
+    name: Tokens are current and accessible
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: Regenerate tokens, icons and artwork
+        run: |
+          node design/tools/generate.mjs
+          node design/tools/generate-icons.mjs
+          node design/tools/generate-artwork.mjs
+
+      # A stale tokens.g.dart is a build failure, not a slow visual drift
+      # nobody notices until an NGO cannot read a status badge.
+      #
+      # The PNG crops are NOT regenerated here: extracting them needs Python
+      # and the source PDF, and it is a manual step for when the design
+      # document changes. This job checks the code generated from them.
+      - name: Generated output must be committed and current
+        run: git diff --exit-code -- packages/
+
+      - name: WCAG 2.2 AA contrast gate
+        run: node design/tools/check-contrast.mjs
+
+  web:
+    name: Web design system
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/web-ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm install --no-audit --no-fund
+      - run: npx tsc --noEmit
+
+  flutter:
+    name: Flutter package
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/ss_design_system
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable }
+      - run: flutter pub get
+      - run: flutter analyze
+
+      # Includes the golden sheets in test/golden — they are the gallery AND
+      # the visual regression check. A component that shifts fails here.
+      - run: flutter test
+
+      - name: Upload golden sheets
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-system-gallery
+          path: packages/ss_design_system/test/golden/goldens/*.png

@@ -1,0 +1,97 @@
+/*
+   GENERATED FILE — DO NOT EDIT.
+   Source: design/tokens/tokens.json
+   Design System v1.0.0
+   Regenerate: node design/tools/generate.mjs
+*/
+
+:root {
+  --ss-color-leaf-green: #1F6B4A;
+  --ss-color-sage-green: #4CAF7A;
+  --ss-color-harvest-orange: #E39A1F;
+  --ss-color-tomato-red: #C2402B;
+  --ss-color-sunrise-yellow: #F6C453;
+  --ss-color-earth-brown: #6B4F3B;
+  --ss-color-green50: #F4FAF7;
+  --ss-color-green100: #E6F3EC;
+  --ss-color-green300: #A7D5B9;
+  --ss-color-green500: #4CAF7A;
+  --ss-color-green700: #1F6B4A;
+  --ss-color-green900: #0E3D2C;
+  --ss-color-ink: #15211B;
+  --ss-color-ink-soft: #4A574F;
+  --ss-color-surface: #FAFBF7;
+  --ss-color-surface-alt: #F2F4EE;
+  --ss-color-border: #D9E1D6;
+  --ss-color-muted: #A3B1A7;
+  --ss-color-white: #FFFFFF;
+  --ss-color-success: #16A34A;
+  --ss-color-on-success-container: #107D38;
+  --ss-color-error: #DC2626;
+  --ss-color-on-error-container: #D32424;
+  --ss-color-warning: #D97706;
+  --ss-color-on-warning-container: #A95C04;
+  --ss-color-info: #2563EB;
+  --ss-color-on-info-container: #2563EB;
+  --ss-color-focus: #7C3AED;
+  --ss-color-on-focus-container: #7C3AED;
+  --ss-gradient-nature: linear-gradient(135deg, #1F6B4A 0%, #4CAF7A 100%);
+  --ss-gradient-sunrise: linear-gradient(135deg, #E39A1F 0%, #F6C453 100%);
+  --ss-space-xs: 4px;
+  --ss-space-sm: 8px;
+  --ss-space-md: 12px;
+  --ss-space-lg: 16px;
+  --ss-space-xl: 24px;
+  --ss-space-xxl: 32px;
+  --ss-space-xxxl: 40px;
+  --ss-space-huge: 56px;
+  --ss-space-mega: 72px;
+  --ss-space-screen-padding: 16px;
+  --ss-space-card-padding: 16px;
+  --ss-space-section-gap: 24px;
+  --ss-radius-xs: 4px;
+  --ss-radius-sm: 8px;
+  --ss-radius-md: 12px;
+  --ss-radius-lg: 16px;
+  --ss-radius-xl: 24px;
+  --ss-radius-pill: 999px;
+  --ss-shadow-none: none;
+  --ss-shadow-sm: 0 1px 2px 0px rgba(21, 33, 27, 0.05);
+  --ss-shadow-md: 0 2px 8px 0px rgba(21, 33, 27, 0.06);
+  --ss-shadow-lg: 0 6px 20px 0px rgba(21, 33, 27, 0.08);
+  --ss-shadow-xl: 0 12px 32px 0px rgba(21, 33, 27, 0.1);
+  --ss-font-h1-size: 3.5rem;
+  --ss-font-h1-line: 1.2;
+  --ss-font-h1-weight: 700;
+  --ss-font-h2-size: 2.5rem;
+  --ss-font-h2-line: 1.2;
+  --ss-font-h2-weight: 600;
+  --ss-font-h3-size: 2rem;
+  --ss-font-h3-line: 1.2;
+  --ss-font-h3-weight: 600;
+  --ss-font-h4-size: 1.5rem;
+  --ss-font-h4-line: 1.3;
+  --ss-font-h4-weight: 500;
+  --ss-font-h5-size: 1.25rem;
+  --ss-font-h5-line: 1.4;
+  --ss-font-h5-weight: 500;
+  --ss-font-body-size: 1rem;
+  --ss-font-body-line: 1.6;
+  --ss-font-body-weight: 400;
+  --ss-font-small-size: 0.875rem;
+  --ss-font-small-line: 1.6;
+  --ss-font-small-weight: 400;
+  --ss-font-caption-size: 0.75rem;
+  --ss-font-caption-line: 1.6;
+  --ss-font-caption-weight: 400;
+  --ss-font-display-size: 2.5rem;
+  --ss-font-display-line: 1.25;
+  --ss-font-display-weight: 500;
+  --ss-font-quote-size: 1.25rem;
+  --ss-font-quote-line: 1.5;
+  --ss-font-quote-weight: 400;
+  --ss-font-primary: 'Inter', system-ui, -apple-system, sans-serif;
+  --ss-font-secondary: 'Lora', Georgia, serif;
+  --ss-icon-stroke: 2px;
+  --ss-tap-target: 44px;
+}

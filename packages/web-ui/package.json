@@ -1,0 +1,32 @@
+{
+  "name": "@surplus-served/web-ui",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Surplus → Served design system for Next.js + MUI.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./src/tokens/tokens.g.css"
+  },
+  "scripts": {
+    "tokens": "node ../../design/tools/generate.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@mui/material": "^6.0.0",
+    "react": "^18.3.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^6.5.0",
+    "@types/node": "^26.5.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.0"
+  }
+}
