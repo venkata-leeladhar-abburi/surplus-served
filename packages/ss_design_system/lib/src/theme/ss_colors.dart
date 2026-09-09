@@ -178,7 +178,12 @@ class SsColors extends ThemeExtension<SsColors> {
       // `color` is the brand hue, reserved for fills and dots.
       return (fg: status.text, bg: status.surface);
     }
-    return (fg: status.color, bg: Color.alphaBlend(status.color.withValues(alpha: 0.16), surface));
+    // Dark tints the chip with the status hue, so the light pair proves
+    // nothing here — `dark` is the tone verified against that tinted ground.
+    return (
+      fg: status.dark,
+      bg: Color.alphaBlend(status.color.withValues(alpha: 0.18), surface),
+    );
   }
 
   @override

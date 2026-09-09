@@ -4,7 +4,9 @@
   "private": true,
   "description": "Surplus → Served — food rescue platform. Design system, mobile app, admin console and API.",
   "type": "module",
-  "workspaces": ["packages/web-ui"],
+  "workspaces": [
+    "packages/web-ui"
+  ],
   "scripts": {
     "design": "npm run design:tokens && npm run design:icons && npm run design:artwork",
     "design:tokens": "node design/tools/generate.mjs",
@@ -13,5 +15,8 @@
     "design:extract": "python3 design/tools/extract_artwork.py",
     "design:check": "node design/tools/check-contrast.mjs",
     "verify": "npm run design && npm run design:check && npm --workspace @surplus-served/web-ui run typecheck"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }

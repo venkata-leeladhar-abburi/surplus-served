@@ -215,6 +215,7 @@ export const status = {
   draft: {
     color: "#A3B1A7",
     text: "#68716A",
+    dark: "#A3B1A7",
     surface: "#F2F4EE",
     icon: "edit",
     labelEn: "Draft"
@@ -222,6 +223,7 @@ export const status = {
   pendingCheck: {
     color: "#D97706",
     text: "#A95C04",
+    dark: "#DC831C",
     surface: "#FDF3E2",
     icon: "time",
     labelEn: "Under review"
@@ -229,6 +231,7 @@ export const status = {
   live: {
     color: "#16A34A",
     text: "#107D38",
+    dark: "#34AF62",
     surface: "#E6F3EC",
     icon: "check",
     labelEn: "Live"
@@ -236,6 +239,7 @@ export const status = {
   allocated: {
     color: "#2563EB",
     text: "#2563EB",
+    dark: "#628FF1",
     surface: "#EAF0FE",
     icon: "user",
     labelEn: "Allocated"
@@ -243,6 +247,7 @@ export const status = {
   collected: {
     color: "#1F6B4A",
     text: "#1F6B4A",
+    dark: "#699C86",
     surface: "#E6F3EC",
     icon: "leaf",
     labelEn: "Collected"
@@ -250,6 +255,7 @@ export const status = {
   reallocated: {
     color: "#D97706",
     text: "#A95C04",
+    dark: "#DC831C",
     surface: "#FDF3E2",
     icon: "refresh",
     labelEn: "Reallocated"
@@ -257,6 +263,7 @@ export const status = {
   unfulfilled: {
     color: "#A3B1A7",
     text: "#68716A",
+    dark: "#A3B1A7",
     surface: "#F2F4EE",
     icon: "time",
     labelEn: "Unfulfilled"
@@ -264,6 +271,7 @@ export const status = {
   cancelled: {
     color: "#DC2626",
     text: "#D32424",
+    dark: "#E66565",
     surface: "#FDECEA",
     icon: "close",
     labelEn: "Cancelled"
@@ -271,6 +279,7 @@ export const status = {
   rejected: {
     color: "#DC2626",
     text: "#D32424",
+    dark: "#E66565",
     surface: "#FDECEA",
     icon: "alert",
     labelEn: "Rejected"
@@ -278,6 +287,7 @@ export const status = {
   urgent: {
     color: "#C2402B",
     text: "#C2402B",
+    dark: "#D47768",
     surface: "#FDECEA",
     icon: "alert",
     labelEn: "Urgent"

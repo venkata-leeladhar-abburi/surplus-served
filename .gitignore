@@ -25,3 +25,7 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+
+# Web demo build output (regenerate with `npm --workspace @surplus-served/web-ui run demo`)
+packages/web-ui/demo/bundle.js
+packages/web-ui/demo/artwork/

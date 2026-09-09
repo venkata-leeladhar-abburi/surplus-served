@@ -122,6 +122,9 @@ EXTRA_ILLUSTRATIONS = [
      "Nothing here yet — good things come soon"),
 ]
 
+# Lockups that also need a reversed variant for dark grounds (§02.9).
+REVERSED_LOCKUPS = {"logoHorizontal", "logoStacked", "leafMark"}
+
 BRAND = [
     ("logoHorizontal", (186, 345, 441, 399), "Surplus → Served — primary horizontal logo"),
     ("logoStacked",    (480, 312, 606, 441), "Surplus → Served — stacked logo"),
@@ -203,6 +206,36 @@ def knock_out_background(im: Image.Image, tolerance: int = 26, feather: int = 1)
     out = rgb.convert("RGBA")
     out.putalpha(Image.fromarray(alpha, mode="L"))
     return out
+
+
+def reverse_for_dark(im: Image.Image) -> Image.Image:
+    """Produce the reversed lockup §02.9 requires for dark grounds.
+
+    The cropped logo is dark ink on transparency, so it disappears on Ink and
+    Leaf Green — two of the document's own approved backgrounds. This lifts the
+    dark greens toward white while leaving the warm accent leaf alone, which is
+    how the document draws the mark on its dark swatches.
+
+    Luminance is inverted rather than flattened, so the leaf keeps its shading
+    and the type keeps its anti-aliasing.
+    """
+    a = np.asarray(im.convert("RGBA")).astype(float)
+    rgb, alpha = a[:, :, :3], a[:, :, 3]
+
+    lum = rgb.mean(axis=2)
+    mx, mn = rgb.max(axis=2), rgb.min(axis=2)
+    sat = mx - mn
+    # Warm = the harvest-orange leaf, which already reads on a dark ground.
+    warm = (rgb[:, :, 0] >= rgb[:, :, 1]) & (rgb[:, :, 1] > rgb[:, :, 2]) & (sat > 45)
+
+    lifted = np.clip(255.0 - lum * 0.62, 0, 255)
+    out = rgb.copy()
+    for ch in range(3):
+        out[:, :, ch] = np.where(warm, rgb[:, :, ch], lifted)
+
+    return Image.fromarray(
+        np.dstack([out, alpha]).round().clip(0, 255).astype(np.uint8), mode="RGBA"
+    )
 
 
 def trim_transparent(im: Image.Image, pad: int = 2) -> Image.Image:
@@ -291,6 +324,21 @@ def main() -> None:
             }
         )
         print(f"  brand         {name:24} {art.width}×{art.height}")
+
+        if name in REVERSED_LOCKUPS:
+            rev = reverse_for_dark(art)
+            rev_name = f"{name}Reversed"
+            rev.save(brand_dir / f"{rev_name}.png", optimize=True)
+            manifest["brand"].append(
+                {
+                    "name": rev_name,
+                    "caption": f"{caption} (reversed, for dark grounds)",
+                    "asset": f"assets/brand/{rev_name}.png",
+                    "width": rev.width,
+                    "height": rev.height,
+                }
+            )
+            print(f"  brand         {rev_name:24} {rev.width}×{rev.height}  (derived)")
 
     manifest["illustrations"].sort(key=lambda i: i["name"])
 

@@ -109,7 +109,7 @@ function dart() {
 
   const statuses = Object.entries(T.status)
     .filter(([k]) => !k.startsWith('$'))
-    .map(([k, s]) => `  ${camel(k)}(${hexToDart(s.color)}, ${hexToDart(s.text)}, ${hexToDart(s.surface)}, '${s.icon}', '${s.labelEn}')`)
+    .map(([k, s]) => `  ${camel(k)}(${hexToDart(s.color)}, ${hexToDart(s.text)}, ${hexToDart(s.dark)}, ${hexToDart(s.surface)}, '${s.icon}', '${s.labelEn}')`)
     .join(',\n');
 
   return `${BANNER('dart')}
@@ -170,13 +170,23 @@ ${Object.entries(T.breakpoints).map(([k, v]) => `  static const double ${dartKey
 enum SsStatus {
 ${statuses};
 
-  const SsStatus(this.color, this.text, this.surface, this.iconName, this.labelEn);
+  const SsStatus(
+    this.color,
+    this.text,
+    this.dark,
+    this.surface,
+    this.iconName,
+    this.labelEn,
+  );
 
   /// Brand hue — for fills, dots and large shapes.
   final Color color;
 
-  /// AA-verified label/icon tone on [surface] (>= 4.5:1).
+  /// AA-verified label/icon tone on [surface] in light mode (>= 4.5:1).
   final Color text;
+
+  /// AA-verified label/icon tone on the tinted chip in dark mode.
+  final Color dark;
 
   final Color surface;
   final String iconName;

@@ -115,17 +115,30 @@ class SsLogo extends StatelessWidget {
     super.key,
     this.variant = SsLogoVariant.horizontal,
     this.height,
+    this.reversed,
     this.semanticLabel = 'Surplus → Served',
   });
 
-  const SsLogo.horizontal({super.key, this.height, this.semanticLabel = 'Surplus → Served'})
-      : variant = SsLogoVariant.horizontal;
+  const SsLogo.horizontal({
+    super.key,
+    this.height,
+    this.reversed,
+    this.semanticLabel = 'Surplus → Served',
+  }) : variant = SsLogoVariant.horizontal;
 
-  const SsLogo.stacked({super.key, this.height, this.semanticLabel = 'Surplus → Served'})
-      : variant = SsLogoVariant.stacked;
+  const SsLogo.stacked({
+    super.key,
+    this.height,
+    this.reversed,
+    this.semanticLabel = 'Surplus → Served',
+  }) : variant = SsLogoVariant.stacked;
 
-  const SsLogo.mark({super.key, this.height, this.semanticLabel = 'Surplus → Served'})
-      : variant = SsLogoVariant.mark;
+  const SsLogo.mark({
+    super.key,
+    this.height,
+    this.reversed,
+    this.semanticLabel = 'Surplus → Served',
+  }) : variant = SsLogoVariant.mark;
 
   final SsLogoVariant variant;
 
@@ -133,14 +146,24 @@ class SsLogo extends StatelessWidget {
   /// is clamped up rather than rendered illegibly.
   final double? height;
 
+  /// Use the reversed lockup (§02.9), for Ink, Leaf Green and photography.
+  /// Defaults to the theme's brightness — the colour wordmark is dark ink and
+  /// simply disappears on a dark ground.
+  final bool? reversed;
+
   final String semanticLabel;
 
   @override
   Widget build(BuildContext context) {
-    final art = switch (variant) {
-      SsLogoVariant.horizontal => SsBrandArt.logoHorizontal,
-      SsLogoVariant.stacked => SsBrandArt.logoStacked,
-      SsLogoVariant.mark => SsBrandArt.leafMark,
+    final onDark = reversed ?? Theme.of(context).brightness == Brightness.dark;
+
+    final art = switch ((variant, onDark)) {
+      (SsLogoVariant.horizontal, false) => SsBrandArt.logoHorizontal,
+      (SsLogoVariant.horizontal, true) => SsBrandArt.logoHorizontalReversed,
+      (SsLogoVariant.stacked, false) => SsBrandArt.logoStacked,
+      (SsLogoVariant.stacked, true) => SsBrandArt.logoStackedReversed,
+      (SsLogoVariant.mark, false) => SsBrandArt.leafMark,
+      (SsLogoVariant.mark, true) => SsBrandArt.leafMarkReversed,
     };
 
     final h = (height ?? art.nativeHeight.toDouble()).clamp(

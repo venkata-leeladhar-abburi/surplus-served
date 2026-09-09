@@ -487,11 +487,29 @@ abstract final class SsBrandArt {
     nativeHeight: 54,
   );
 
+  /// Surplus → Served — primary horizontal logo (reversed, for dark grounds)
+  static const logoHorizontalReversed = SsArtwork(
+    name: 'logoHorizontalReversed',
+    asset: 'assets/brand/logoHorizontalReversed.png',
+    caption: "Surplus → Served — primary horizontal logo (reversed, for dark grounds)",
+    nativeWidth: 255,
+    nativeHeight: 54,
+  );
+
   /// Surplus → Served — stacked logo
   static const logoStacked = SsArtwork(
     name: 'logoStacked',
     asset: 'assets/brand/logoStacked.png',
     caption: "Surplus → Served — stacked logo",
+    nativeWidth: 115,
+    nativeHeight: 115,
+  );
+
+  /// Surplus → Served — stacked logo (reversed, for dark grounds)
+  static const logoStackedReversed = SsArtwork(
+    name: 'logoStackedReversed',
+    asset: 'assets/brand/logoStackedReversed.png',
+    caption: "Surplus → Served — stacked logo (reversed, for dark grounds)",
     nativeWidth: 115,
     nativeHeight: 115,
   );
@@ -514,6 +532,15 @@ abstract final class SsBrandArt {
     nativeHeight: 86,
   );
 
+  /// Leaf mark (reversed, for dark grounds)
+  static const leafMarkReversed = SsArtwork(
+    name: 'leafMarkReversed',
+    asset: 'assets/brand/leafMarkReversed.png',
+    caption: "Leaf mark (reversed, for dark grounds)",
+    nativeWidth: 78,
+    nativeHeight: 86,
+  );
+
   /// Movement thread — the arrow that shows food in motion
   static const movementArrow = SsArtwork(
     name: 'movementArrow',
@@ -525,9 +552,12 @@ abstract final class SsBrandArt {
 
   static const Map<String, SsArtwork> all = <String, SsArtwork>{
     'logoHorizontal': logoHorizontal,
+    'logoHorizontalReversed': logoHorizontalReversed,
     'logoStacked': logoStacked,
+    'logoStackedReversed': logoStackedReversed,
     'logoIcon': logoIcon,
     'leafMark': leafMark,
+    'leafMarkReversed': leafMarkReversed,
     'movementArrow': movementArrow,
   };
 }

@@ -225,24 +225,34 @@ abstract final class SsBreakpoints {
 /// Donation lifecycle status → colour, surface, icon name, English label.
 /// Colour is never the only signal: always render the icon and label too.
 enum SsStatus {
-  draft(Color(0xFFA3B1A7), Color(0xFF68716A), Color(0xFFF2F4EE), 'edit', 'Draft'),
-  pendingCheck(Color(0xFFD97706), Color(0xFFA95C04), Color(0xFFFDF3E2), 'time', 'Under review'),
-  live(Color(0xFF16A34A), Color(0xFF107D38), Color(0xFFE6F3EC), 'check', 'Live'),
-  allocated(Color(0xFF2563EB), Color(0xFF2563EB), Color(0xFFEAF0FE), 'user', 'Allocated'),
-  collected(Color(0xFF1F6B4A), Color(0xFF1F6B4A), Color(0xFFE6F3EC), 'leaf', 'Collected'),
-  reallocated(Color(0xFFD97706), Color(0xFFA95C04), Color(0xFFFDF3E2), 'refresh', 'Reallocated'),
-  unfulfilled(Color(0xFFA3B1A7), Color(0xFF68716A), Color(0xFFF2F4EE), 'time', 'Unfulfilled'),
-  cancelled(Color(0xFFDC2626), Color(0xFFD32424), Color(0xFFFDECEA), 'close', 'Cancelled'),
-  rejected(Color(0xFFDC2626), Color(0xFFD32424), Color(0xFFFDECEA), 'alert', 'Rejected'),
-  urgent(Color(0xFFC2402B), Color(0xFFC2402B), Color(0xFFFDECEA), 'alert', 'Urgent');
+  draft(Color(0xFFA3B1A7), Color(0xFF68716A), Color(0xFFA3B1A7), Color(0xFFF2F4EE), 'edit', 'Draft'),
+  pendingCheck(Color(0xFFD97706), Color(0xFFA95C04), Color(0xFFDC831C), Color(0xFFFDF3E2), 'time', 'Under review'),
+  live(Color(0xFF16A34A), Color(0xFF107D38), Color(0xFF34AF62), Color(0xFFE6F3EC), 'check', 'Live'),
+  allocated(Color(0xFF2563EB), Color(0xFF2563EB), Color(0xFF628FF1), Color(0xFFEAF0FE), 'user', 'Allocated'),
+  collected(Color(0xFF1F6B4A), Color(0xFF1F6B4A), Color(0xFF699C86), Color(0xFFE6F3EC), 'leaf', 'Collected'),
+  reallocated(Color(0xFFD97706), Color(0xFFA95C04), Color(0xFFDC831C), Color(0xFFFDF3E2), 'refresh', 'Reallocated'),
+  unfulfilled(Color(0xFFA3B1A7), Color(0xFF68716A), Color(0xFFA3B1A7), Color(0xFFF2F4EE), 'time', 'Unfulfilled'),
+  cancelled(Color(0xFFDC2626), Color(0xFFD32424), Color(0xFFE66565), Color(0xFFFDECEA), 'close', 'Cancelled'),
+  rejected(Color(0xFFDC2626), Color(0xFFD32424), Color(0xFFE66565), Color(0xFFFDECEA), 'alert', 'Rejected'),
+  urgent(Color(0xFFC2402B), Color(0xFFC2402B), Color(0xFFD47768), Color(0xFFFDECEA), 'alert', 'Urgent');
 
-  const SsStatus(this.color, this.text, this.surface, this.iconName, this.labelEn);
+  const SsStatus(
+    this.color,
+    this.text,
+    this.dark,
+    this.surface,
+    this.iconName,
+    this.labelEn,
+  );
 
   /// Brand hue — for fills, dots and large shapes.
   final Color color;
 
-  /// AA-verified label/icon tone on [surface] (>= 4.5:1).
+  /// AA-verified label/icon tone on [surface] in light mode (>= 4.5:1).
   final Color text;
+
+  /// AA-verified label/icon tone on the tinted chip in dark mode.
+  final Color dark;
 
   final Color surface;
   final String iconName;

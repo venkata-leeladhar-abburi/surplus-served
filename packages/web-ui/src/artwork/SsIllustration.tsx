@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useTheme } from '@mui/material/styles';
 
 import { brandArt, illustrations, type BrandArtName, type IllustrationName } from './artwork.g';
 
@@ -55,12 +56,24 @@ export interface LogoProps
   variant?: LogoVariant;
   /** Height in px. §02.9 sets the digital floor at 24px. */
   height?: number;
+  /**
+   * Use the reversed lockup (§02.9), for Ink, Leaf Green and photography.
+   * Defaults to the theme's mode — the colour wordmark is dark ink and simply
+   * disappears on a dark ground.
+   */
+  reversed?: boolean;
 }
 
 const LOGO_ASSET: Record<LogoVariant, BrandArtName> = {
   horizontal: 'logoHorizontal',
   stacked: 'logoStacked',
   mark: 'leafMark',
+};
+
+const LOGO_ASSET_REVERSED: Record<LogoVariant, BrandArtName> = {
+  horizontal: 'logoHorizontalReversed',
+  stacked: 'logoStackedReversed',
+  mark: 'leafMarkReversed',
 };
 
 /** §02.9 — the rules the mark ships with. */
@@ -82,8 +95,10 @@ export const logoRules = {
  * §02.9 forbids recolouring and restacking the mark, so this component takes a
  * size and nothing else — there is deliberately no colour prop.
  */
-export function Logo({ variant = 'horizontal', height, ...rest }: LogoProps) {
-  const art = brandArt[LOGO_ASSET[variant]];
+export function Logo({ variant = 'horizontal', height, reversed, ...rest }: LogoProps) {
+  const theme = useTheme();
+  const onDark = reversed ?? theme.palette.mode === 'dark';
+  const art = brandArt[(onDark ? LOGO_ASSET_REVERSED : LOGO_ASSET)[variant]];
   const h = Math.max(logoRules.minSize, height ?? art.nativeHeight);
   const w = Math.round((h / art.nativeHeight) * art.nativeWidth);
 

@@ -99,6 +99,13 @@ cropped from §02.1 of the design document:
 | `logoIcon` | Icon-only tile. |
 | `leafMark` | The mark alone, no tile. |
 | `movementArrow` | The §02.8 movement thread, for standalone use. |
+| `logoHorizontalReversed`, `logoStackedReversed`, `leafMarkReversed` | For Ink, Leaf Green and photography. |
+
+The reversed lockups are **derived**, not cropped: §02.9 approves Ink and Leaf
+Green as backgrounds, but the document only supplies the colour mark, whose
+wordmark is dark ink and disappears on them. `extract_artwork.py` lifts the
+dark greens toward white and leaves the harvest-orange leaf alone. `SsLogo` and
+`Logo` pick the reversed asset from the theme's brightness by default.
 
 ```dart
 SsLogo.horizontal(height: 40)
@@ -107,7 +114,8 @@ SsLogo.mark(height: 32)
 ```
 
 ```tsx
-<Logo variant="horizontal" height={40} />
+<Logo variant="horizontal" height={40} />        {/* follows the theme */}
+<Logo variant="horizontal" height={40} reversed /> {/* force, e.g. over a photo */}
 ```
 
 ### Logo rules
@@ -389,11 +397,18 @@ Every component in this repo carries its own `Semantics` node. `SsStatusBadge` r
 icon and a label beside the colour; `SsIconButton` requires a `tooltip` that doubles as its
 screen-reader label; `SsFreshnessRing` announces "Pickup window: 18 min left".
 
-Contrast is verified in CI:
+Contrast is verified in CI, **in both themes**:
 
 ```bash
-node design/tools/check-contrast.mjs
+node design/tools/check-contrast.mjs   # 34 pairings
 ```
+
+The dark-mode gate is not decorative. Dark tints a status chip with the status
+hue rather than using the pale light-mode surface, so the light pair proves
+nothing about it — and eight of the ten badges failed AA on dark until each
+status gained a verified `dark` tone. `SsStatus` therefore carries three
+colours: `color` (the brand hue, for fills), `text` (AA on the light surface)
+and `dark` (AA on the tinted dark chip).
 
 ---
 
@@ -528,6 +543,22 @@ Plus the product-specific pieces: `SsFreshnessRing` (§02.8), `SsPickupCode` (sc
 `FreshnessRing`, `PageHeader`, `ConfirmDialog`, `FilterBar`, `SsIcon`, `SsIllustration`,
 `Logo`. The admin console's form primitives — select, checkbox, radio, switch, slider,
 tabs — are MUI's own, styled by `theme.ts`, so they are not duplicated here.
+
+Both platforms have somewhere to *look* at every component rather than trusting that it
+compiles:
+
+```bash
+cd packages/ss_design_system && flutter test --update-goldens test/golden
+#   -> test/golden/goldens/*.png, six sheets covering every component
+
+npm --workspace @surplus-served/web-ui run demo
+#   -> http://localhost:4173, with a light/dark toggle
+```
+
+The web gallery earned its keep immediately: it caught `Logo` and `SsIllustration` missing
+from the package barrel, the status chips and tags pinned to light-theme surfaces, and the
+wordmark vanishing on dark. `src/barrel.check.ts` now fails the typecheck if a public export
+is dropped again.
 
 ---
 

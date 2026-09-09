@@ -2,7 +2,7 @@
   "name": "@surplus-served/web-ui",
   "version": "1.0.0",
   "private": true,
-  "description": "Surplus → Served design system for Next.js + MUI.",
+  "description": "Surplus \u2192 Served design system for Next.js + MUI.",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -12,7 +12,9 @@
   },
   "scripts": {
     "tokens": "node ../../design/tools/generate.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "demo": "node ../../design/tools/build-web-demo.mjs && python3 -m http.server 4173 --directory demo",
+    "demo:build": "node ../../design/tools/build-web-demo.mjs"
   },
   "peerDependencies": {
     "@mui/material": "^6.0.0",

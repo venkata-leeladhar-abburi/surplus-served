@@ -1,8 +1,9 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
+import { alpha, useTheme } from '@mui/material/styles';
 
 import { SsIcon, type IconName } from '../icons/SsIcon';
-import { status as statusTokens, type StatusToken } from '../tokens/tokens.g';
+import { colors, status as statusTokens, type StatusToken } from '../tokens/tokens.g';
 
 export interface StatusChipProps {
   status: StatusToken;
@@ -20,8 +21,16 @@ export interface StatusChipProps {
  * drives across the city.
  */
 export function StatusChip({ status, label, dense = false }: StatusChipProps) {
+  const theme = useTheme();
   const token = statusTokens[status];
   const text = label ?? token.labelEn;
+
+  // The token's `surface` and `text` are the light-theme pair. On dark, tint
+  // the paper with the status hue instead — the pale surfaces would otherwise
+  // punch bright holes in a dark table.
+  const dark = theme.palette.mode === 'dark';
+  const bg = dark ? alpha(token.color, 0.18) : token.surface;
+  const fg = dark ? token.dark : token.text;
 
   return (
     <Box
@@ -34,10 +43,10 @@ export function StatusChip({ status, label, dense = false }: StatusChipProps) {
         px: dense ? 0.75 : 1.25,
         py: dense ? 0.25 : 0.5,
         borderRadius: 999,
-        backgroundColor: token.surface,
-        // `text` is the AA-verified tone against `surface`; `color` is the
-        // brand hue and belongs on fills, not on 12px label text.
-        color: token.text,
+        backgroundColor: bg,
+        // In light mode `text` is the AA-verified tone against `surface`;
+        // `color` is the brand hue and belongs on fills, not on 12px label text.
+        color: fg,
         fontSize: dense ? 11 : 13,
         fontWeight: 600,
         lineHeight: 1.4,
@@ -59,15 +68,28 @@ export interface TagProps {
 }
 
 const TONES: Record<TagTone, { fg: string; bg: string; border?: string }> = {
-  neutral: { fg: '#4A574F', bg: '#F2F4EE', border: '#D9E1D6' },
-  positive: { fg: '#1F6B4A', bg: '#E6F3EC' },
-  warm: { fg: '#A95C04', bg: '#FDF3E2' },
-  info: { fg: '#2563EB', bg: '#EAF0FE' },
+  neutral: { fg: colors.inkSoft, bg: colors.surfaceAlt, border: colors.border },
+  positive: { fg: colors.leafGreen, bg: colors.green100 },
+  warm: { fg: colors.onWarningContainer, bg: '#FDF3E2' },
+  info: { fg: colors.info, bg: '#EAF0FE' },
+};
+
+/** Brand hues to tint with on dark, where the pale surfaces above don't work. */
+const DARK_TONES: Record<TagTone, string> = {
+  neutral: colors.muted,
+  positive: colors.sageGreen,
+  warm: colors.harvestOrange,
+  info: colors.info,
 };
 
 /** §06.4 Content tag — "Vegetarian", "Bulk", "Nearby", "Verified". */
 export function Tag({ label, icon, tone = 'neutral' }: TagProps) {
-  const t = TONES[tone];
+  const theme = useTheme();
+  const dark = theme.palette.mode === 'dark';
+  const hue = DARK_TONES[tone];
+  const t = dark
+    ? { fg: hue, bg: alpha(hue, 0.18), border: undefined }
+    : TONES[tone];
   return (
     <Box
       component="span"

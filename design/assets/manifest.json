@@ -330,9 +330,23 @@
       "height": 54
     },
     {
+      "name": "logoHorizontalReversed",
+      "caption": "Surplus \u2192 Served \u2014 primary horizontal logo (reversed, for dark grounds)",
+      "asset": "assets/brand/logoHorizontalReversed.png",
+      "width": 255,
+      "height": 54
+    },
+    {
       "name": "logoStacked",
       "caption": "Surplus \u2192 Served \u2014 stacked logo",
       "asset": "assets/brand/logoStacked.png",
+      "width": 115,
+      "height": 115
+    },
+    {
+      "name": "logoStackedReversed",
+      "caption": "Surplus \u2192 Served \u2014 stacked logo (reversed, for dark grounds)",
+      "asset": "assets/brand/logoStackedReversed.png",
       "width": 115,
       "height": 115
     },
@@ -347,6 +361,13 @@
       "name": "leafMark",
       "caption": "Leaf mark",
       "asset": "assets/brand/leafMark.png",
+      "width": 78,
+      "height": 86
+    },
+    {
+      "name": "leafMarkReversed",
+      "caption": "Leaf mark (reversed, for dark grounds)",
+      "asset": "assets/brand/leafMarkReversed.png",
       "width": 78,
       "height": 86
     },

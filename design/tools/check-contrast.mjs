@@ -58,10 +58,45 @@ for (const [name, bg] of Object.entries(containers)) {
   checks.push([`${name}.onContainer on its tint`, tone, bg, AA_TEXT]);
 }
 
-// Every status badge: label/icon tone against the badge surface.
+// Every status badge, light mode: label/icon tone against the badge surface.
 for (const [name, s] of Object.entries(T.status)) {
   if (name.startsWith('$')) continue;
-  checks.push([`status.${name} text on surface`, s.text, s.surface, AA_TEXT]);
+  checks.push([`status.${name} text on surface (light)`, s.text, s.surface, AA_TEXT]);
+}
+
+/** Composites `fg` over `bg` at `alpha`, the way a tinted chip is drawn. */
+const blend = (fg, bg, alpha) => {
+  const parse = (h) => [0, 2, 4].map((i) => parseInt(h.replace('#', '').slice(i, i + 2), 16));
+  const [f, b] = [parse(fg), parse(bg)];
+  return (
+    '#' +
+    f
+      .map((v, i) => Math.round(v * alpha + b[i] * (1 - alpha)).toString(16).padStart(2, '0'))
+      .join('')
+  );
+};
+
+// Dark mode draws the chip as the status hue tinted over the dark surface, so
+// the light-mode pair proves nothing here. This gate exists because eight of
+// ten badges failed AA on dark until it was added.
+const DARK_SURFACE = '#141F1A';
+const DARK_TINT = 0.18;
+for (const [name, s] of Object.entries(T.status)) {
+  if (name.startsWith('$')) continue;
+  checks.push([
+    `status.${name} dark on tinted chip`,
+    s.dark,
+    blend(s.color, DARK_SURFACE, DARK_TINT),
+    AA_TEXT,
+  ]);
+}
+
+// Core dark-theme text pairs.
+for (const [label, fg] of [
+  ['onSurface', '#EAF1EC'],
+  ['onSurfaceVariant', '#AFBDB4'],
+]) {
+  checks.push([`dark: ${label} on background`, fg, '#0D1512', AA_TEXT]);
 }
 
 let failed = 0;

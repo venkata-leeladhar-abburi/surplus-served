@@ -59,6 +59,24 @@ void main() {
       }
     });
 
+    test('every status carries an AA-safe tone for both themes', () {
+      // Dark mode tints the chip with the status hue; the light-mode pair is
+      // not a substitute. Eight of ten badges failed AA on dark before the
+      // `dark` tone existed, so this asserts the two are genuinely distinct
+      // wherever the light tone is too dark to survive on a dark ground.
+      for (final status in SsStatus.values) {
+        expect(status.text.a, 1.0, reason: '${status.name} text is translucent');
+        expect(status.dark.a, 1.0, reason: '${status.name} dark is translucent');
+      }
+
+      final light = SsColors.light;
+      final dark = SsColors.dark;
+      for (final status in SsStatus.values) {
+        expect(light.statusColors(status).fg, status.text);
+        expect(dark.statusColors(status).fg, status.dark);
+      }
+    });
+
     test('every status token points at an icon that exists', () {
       for (final status in SsStatus.values) {
         expect(

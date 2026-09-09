@@ -14,8 +14,8 @@ cooked food to the NGOs who can use it before it spoils.
 | [`design/icons/icons.mjs`](design/icons/icons.mjs) | All 59 icons, drawn as geometry. |
 | [`design/assets/`](design/assets) | 40 illustrations + 5 brand marks, cropped from the design artwork. |
 | [`design/tools/`](design/tools) | Generators — tokens, icons, artwork, and the WCAG gate. |
-| [`packages/ss_design_system`](packages/ss_design_system) | Flutter theme, 44 components, icons, artwork (57 tests passing) |
-| [`packages/web-ui`](packages/web-ui) | MUI theme, 12 React components, icons, artwork |
+| [`packages/ss_design_system`](packages/ss_design_system) | Flutter theme, 44 components, icons, artwork (58 tests passing) |
+| [`packages/web-ui`](packages/web-ui) | MUI theme, 12 React components, icons, artwork, gallery |
 | [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) | The system, written out — including the 3 places it deviates from the source PDF |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Repo layout and service architecture for the full stack |
 
@@ -23,7 +23,7 @@ cooked food to the NGOs who can use it before it spoils.
 
 ```bash
 npm run design        # regenerate tokens, icons and artwork
-npm run design:check  # verify WCAG 2.2 AA before committing
+npm run design:check  # verify WCAG 2.2 AA (both themes) before committing
 npm run verify        # everything above, plus the web typecheck
 ```
 
