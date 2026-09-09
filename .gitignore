@@ -28,4 +28,5 @@ venv/
 
 # Web demo build output (regenerate with `npm --workspace @surplus-served/web-ui run demo`)
 packages/web-ui/demo/bundle.js
+packages/web-ui/demo/index.html
 packages/web-ui/demo/artwork/

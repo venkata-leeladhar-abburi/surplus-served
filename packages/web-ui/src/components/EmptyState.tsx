@@ -3,13 +3,18 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
 import { SsIcon, type IconName } from '../icons/SsIcon';
+import { SsIllustration } from '../artwork/SsIllustration';
+import type { IllustrationName } from '../artwork/artwork.g';
 
 export interface EmptyStateProps {
   title: string;
   message: string;
   icon?: IconName;
+  /** A §09 illustration, which replaces the icon when set — as in Flutter. */
+  illustration?: IllustrationName;
   primaryActionLabel?: string;
   onPrimaryAction?: () => void;
   secondaryActionLabel?: string;
@@ -28,6 +33,7 @@ export function EmptyState({
   title,
   message,
   icon = 'receive',
+  illustration,
   primaryActionLabel,
   onPrimaryAction,
   secondaryActionLabel,
@@ -36,6 +42,9 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <Stack alignItems="center" spacing={2} sx={{ py: 8, px: 3, textAlign: 'center' }}>
+      {illustration ? (
+        <SsIllustration name={illustration} width={168} alt="" />
+      ) : (
       <Box
         sx={{
           width: 96,
@@ -43,14 +52,15 @@ export function EmptyState({
           borderRadius: '50%',
           display: 'grid',
           placeItems: 'center',
-          backgroundColor: 'primary.main',
-          opacity: 0.12,
-          position: 'relative',
+          // Tint the circle rather than fading the whole box: fading it would
+          // take the icon's contrast down with it.
+          backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.12),
+          color: 'primary.main',
         }}
-      />
-      <Box sx={{ mt: -9, color: 'primary.main' }}>
+      >
         <SsIcon name={icon} size="xl" />
       </Box>
+      )}
 
       <Typography variant="h4" sx={{ mt: 2 }}>
         {title}

@@ -7,7 +7,7 @@
  * The gallery is the web counterpart of the Flutter golden sheets: somewhere to
  * actually look at every React component rather than trusting that it compiles.
  */
-import { cpSync, mkdirSync, rmSync } from 'node:fs';
+import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -33,3 +33,18 @@ await esbuild.build({
   define: { 'process.env.NODE_ENV': '"development"' },
   logLevel: 'info',
 });
+
+// Stamp the script tag so a rebuild is never masked by a cached bundle.
+writeFileSync(
+  resolve(demo, 'index.html'),
+  `<!doctype html>
+<meta charset="utf-8">
+<title>Surplus → Served — web design system</title>
+<style>
+  html, body { margin: 0; }
+  #root { min-height: 100vh; }
+</style>
+<div id="root"></div>
+<script src="bundle.js?t=${Date.now()}"></script>
+`,
+);

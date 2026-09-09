@@ -230,7 +230,7 @@ function Gallery() {
 
       <Section title="Empty state (§07.12)">
         <EmptyState
-          icon="search"
+          illustration="noResultsFound"
           title="No results found"
           message="We couldn't find any food matching your search. Try different keywords or adjust your filters."
           primaryActionLabel="Clear Filters"
