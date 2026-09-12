@@ -4,6 +4,7 @@ import 'package:ss_design_system/ss_design_system.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
+import '../../../../shared/widgets/connectivity_banner.dart';
 import '../../domain/user_role.dart';
 
 class OtpScreenArgs {
@@ -32,7 +33,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       _hasError = false;
     });
     try {
-      final session = await ref.read(authRepositoryProvider).verifyOtp(
+      final session = await ref
+          .read(authRepositoryProvider)
+          .verifyOtp(
             phone: widget.args.phone,
             otp: _controller.text,
             role: widget.args.role,
@@ -54,36 +57,48 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(backgroundColor: c.background, elevation: 0),
-      body: Padding(
-        padding: const EdgeInsets.all(SsSpacing.xl),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(l10n.authOtpTitle, style: SsTypeScale.h3.copyWith(color: c.onSurface)),
-            const SizedBox(height: SsSpacing.sm),
-            Text(
-              l10n.authOtpSubtitle(widget.args.phone),
-              style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
+      body: Column(
+        children: [
+          const ConnectivityBanner(),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(SsSpacing.xl),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.authOtpTitle,
+                    style: SsTypeScale.h3.copyWith(color: c.onSurface),
+                  ),
+                  const SizedBox(height: SsSpacing.sm),
+                  Text(
+                    l10n.authOtpSubtitle(widget.args.phone),
+                    style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: SsSpacing.xl),
+                  SsTextField(
+                    label: l10n.authOtpCodeLabel,
+                    controller: _controller,
+                    keyboardType: TextInputType.number,
+                    maxLength: 4,
+                    errorText: _hasError ? l10n.authOtpError : null,
+                    autofocus: true,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: SsSpacing.xl),
+                  SsButton.primary(
+                    label: l10n.authVerifyCta,
+                    expand: true,
+                    isLoading: _verifying,
+                    onPressed: _controller.text.length == 4 && !_verifying
+                        ? _verify
+                        : null,
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: SsSpacing.xl),
-            SsTextField(
-              label: l10n.authOtpCodeLabel,
-              controller: _controller,
-              keyboardType: TextInputType.number,
-              maxLength: 4,
-              errorText: _hasError ? l10n.authOtpError : null,
-              autofocus: true,
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: SsSpacing.xl),
-            SsButton.primary(
-              label: l10n.authVerifyCta,
-              expand: true,
-              isLoading: _verifying,
-              onPressed: _controller.text.length == 4 && !_verifying ? _verify : null,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

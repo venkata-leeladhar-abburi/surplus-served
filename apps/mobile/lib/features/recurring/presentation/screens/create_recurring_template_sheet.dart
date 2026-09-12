@@ -5,7 +5,10 @@ import 'package:ss_design_system/ss_design_system.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
 
-Future<void> showCreateRecurringTemplateSheet(BuildContext context, WidgetRef ref) {
+Future<void> showCreateRecurringTemplateSheet(
+  BuildContext context,
+  WidgetRef ref,
+) {
   final l10n = AppLocalizations.of(context)!;
   return SsSheet.show<void>(
     context,
@@ -31,13 +34,16 @@ class _CreateTemplateFormState extends State<_CreateTemplateForm> {
   bool _saving = false;
 
   bool get _canSave =>
-      _titleController.text.trim().isNotEmpty && _localityController.text.trim().isNotEmpty;
+      _titleController.text.trim().isNotEmpty &&
+      _localityController.text.trim().isNotEmpty;
 
   Future<void> _save() async {
     final session = widget.ref.read(sessionProvider);
     if (session == null) return;
     setState(() => _saving = true);
-    await widget.ref.read(recurringRepositoryProvider).createTemplate(
+    await widget.ref
+        .read(recurringRepositoryProvider)
+        .createTemplate(
           donorId: session.userId,
           donorName: session.name,
           title: _titleController.text.trim(),
@@ -52,7 +58,12 @@ class _CreateTemplateFormState extends State<_CreateTemplateForm> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(SsSpacing.xl, 0, SsSpacing.xl, SsSpacing.xl),
+      padding: const EdgeInsets.fromLTRB(
+        SsSpacing.xl,
+        0,
+        SsSpacing.xl,
+        SsSpacing.xl,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -90,7 +101,8 @@ class _CreateTemplateFormState extends State<_CreateTemplateForm> {
                   value: _windowHours,
                   items: const [1, 2, 3, 4],
                   labelBuilder: (v) => l10n.recurringHoursShort(v),
-                  onChanged: (v) => setState(() => _windowHours = v ?? _windowHours),
+                  onChanged: (v) =>
+                      setState(() => _windowHours = v ?? _windowHours),
                 ),
               ),
             ],

@@ -16,7 +16,9 @@ class AuthRepositoryFixture implements AuthRepository {
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
     final id = role == UserRole.donor ? 'donor-demo' : 'ngo-demo';
-    final name = role == UserRole.donor ? 'Green Leaf Caterers' : 'Anna Poorna Trust';
+    final name = role == UserRole.donor
+        ? 'Green Leaf Caterers'
+        : 'Anna Poorna Trust';
     return Session(userId: id, name: name, phone: phone, role: role);
   }
 }

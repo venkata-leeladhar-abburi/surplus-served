@@ -8,7 +8,9 @@ import '../../domain/donation.dart';
 final donorDonationsProvider = StreamProvider<List<Donation>>((ref) {
   final session = ref.watch(sessionProvider);
   if (session == null) return const Stream.empty();
-  return ref.watch(donationRepositoryProvider).watchDonorDonations(session.userId);
+  return ref
+      .watch(donationRepositoryProvider)
+      .watchDonorDonations(session.userId);
 });
 
 /// A single donation, tracked live — used by both the donor's own detail

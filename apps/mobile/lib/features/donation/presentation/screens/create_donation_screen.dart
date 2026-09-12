@@ -5,21 +5,23 @@ import 'package:ss_design_system/ss_design_system.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
+import '../../../../shared/widgets/connectivity_banner.dart';
 import '../../domain/donation.dart';
 
 List<String> _steps(AppLocalizations l10n) => [
-      l10n.donorCreateStepDetails,
-      l10n.donorCreateStepPortions,
-      l10n.donorCreateStepWindow,
-      l10n.donorCreateStepAddress,
-      l10n.donorCreateStepReview,
-    ];
+  l10n.donorCreateStepDetails,
+  l10n.donorCreateStepPortions,
+  l10n.donorCreateStepWindow,
+  l10n.donorCreateStepAddress,
+  l10n.donorCreateStepReview,
+];
 
 class CreateDonationScreen extends ConsumerStatefulWidget {
   const CreateDonationScreen({super.key});
 
   @override
-  ConsumerState<CreateDonationScreen> createState() => _CreateDonationScreenState();
+  ConsumerState<CreateDonationScreen> createState() =>
+      _CreateDonationScreenState();
 }
 
 class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
@@ -33,24 +35,27 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
   final _localityController = TextEditingController();
 
   bool get _canAdvance => switch (_step) {
-        0 => _titleController.text.trim().isNotEmpty,
-        1 => _portions > 0,
-        2 => true,
-        3 => _localityController.text.trim().isNotEmpty,
-        _ => true,
-      };
+    0 => _titleController.text.trim().isNotEmpty,
+    1 => _portions > 0,
+    2 => true,
+    3 => _localityController.text.trim().isNotEmpty,
+    _ => true,
+  };
 
   Future<void> _post() async {
     final session = ref.read(sessionProvider);
     if (session == null) return;
     setState(() => _posting = true);
     final now = DateTime.now();
-    final donation = await ref.read(donationRepositoryProvider).create(
+    final donation = await ref
+        .read(donationRepositoryProvider)
+        .create(
           donorId: session.userId,
           donorName: session.name,
           title: _titleController.text.trim(),
-          description:
-              _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
           portions: _portions,
           pickupWindowStart: now,
           pickupWindowEnd: now.add(_window),
@@ -86,12 +91,15 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const ConnectivityBanner(),
             SsStepper(steps: steps, currentIndex: _step),
             const SizedBox(height: SsSpacing.xl),
             Expanded(child: _buildStep(c, l10n, steps)),
             const SizedBox(height: SsSpacing.lg),
             SsButton.primary(
-              label: _step == steps.length - 1 ? l10n.donorCreateCta : l10n.commonNext,
+              label: _step == steps.length - 1
+                  ? l10n.donorCreateCta
+                  : l10n.commonNext,
               expand: true,
               isLoading: _posting,
               onPressed: _canAdvance && !_posting
@@ -117,7 +125,10 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(steps[0], style: SsTypeScale.h3.copyWith(color: c.onSurface)),
+              Text(
+                steps[0],
+                style: SsTypeScale.h3.copyWith(color: c.onSurface),
+              ),
               const SizedBox(height: SsSpacing.lg),
               SsTextField(
                 label: l10n.donorCreateFoodLabel,
@@ -147,11 +158,16 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
                 SsIconButton(
                   icon: SsIcons.minus,
                   tooltip: l10n.donorCreatePortionsMinusTooltip,
-                  onPressed: _portions > 1 ? () => setState(() => _portions -= 5) : null,
+                  onPressed: _portions > 1
+                      ? () => setState(() => _portions -= 5)
+                      : null,
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: SsSpacing.xl),
-                  child: Text('$_portions', style: SsTypeScale.h1.copyWith(color: c.onSurface)),
+                  child: Text(
+                    '$_portions',
+                    style: SsTypeScale.h1.copyWith(color: c.onSurface),
+                  ),
                 ),
                 SsIconButton(
                   icon: SsIcons.plus,
@@ -162,8 +178,10 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
             ),
             const SizedBox(height: SsSpacing.sm),
             Center(
-              child: Text(l10n.donorCreatePortionsUnit,
-                  style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant)),
+              child: Text(
+                l10n.donorCreatePortionsUnit,
+                style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
+              ),
             ),
           ],
         );
@@ -194,7 +212,10 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(steps[3], style: SsTypeScale.h3.copyWith(color: c.onSurface)),
+              Text(
+                steps[3],
+                style: SsTypeScale.h3.copyWith(color: c.onSurface),
+              ),
               const SizedBox(height: SsSpacing.sm),
               Text(
                 l10n.donorCreateAddressPrivacyNote,
@@ -217,19 +238,29 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(steps[4], style: SsTypeScale.h3.copyWith(color: c.onSurface)),
+              Text(
+                steps[4],
+                style: SsTypeScale.h3.copyWith(color: c.onSurface),
+              ),
               const SizedBox(height: SsSpacing.lg),
-              _ReviewRow(label: l10n.donorCreateReviewFoodLabel, value: _titleController.text),
-              _ReviewRow(label: l10n.donorCreateReviewPortionsLabel, value: '$_portions'),
+              _ReviewRow(
+                label: l10n.donorCreateReviewFoodLabel,
+                value: _titleController.text,
+              ),
+              _ReviewRow(
+                label: l10n.donorCreateReviewPortionsLabel,
+                value: '$_portions',
+              ),
               _ReviewRow(
                 label: l10n.donorCreateReviewWindowLabel,
                 value: l10n.donorCreateReviewWindowValue(_window.inHours),
               ),
-              _ReviewRow(label: l10n.donorCreateReviewLocalityLabel, value: _localityController.text),
-              const SizedBox(height: SsSpacing.lg),
-              SsAlert(
-                message: l10n.donorCreateLiveAlert,
+              _ReviewRow(
+                label: l10n.donorCreateReviewLocalityLabel,
+                value: _localityController.text,
               ),
+              const SizedBox(height: SsSpacing.lg),
+              SsAlert(message: l10n.donorCreateLiveAlert),
             ],
           ),
         );
@@ -240,7 +271,11 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
 }
 
 class _WindowOption extends StatelessWidget {
-  const _WindowOption({required this.label, required this.selected, required this.onTap});
+  const _WindowOption({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -263,7 +298,10 @@ class _WindowOption extends StatelessWidget {
           ),
           child: Row(
             children: [
-              SsIcon(SsIcons.time, color: selected ? c.primary : c.onSurfaceVariant),
+              SsIcon(
+                SsIcons.time,
+                color: selected ? c.primary : c.onSurfaceVariant,
+              ),
               const SizedBox(width: SsSpacing.md),
               Text(
                 label,
@@ -295,9 +333,20 @@ class _ReviewRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: SsSpacing.md),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant))),
           Expanded(
-            child: Text(value, style: SsTypeScale.body.copyWith(color: c.onSurface, fontWeight: FontWeight.w600)),
+            child: Text(
+              label,
+              style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: SsTypeScale.body.copyWith(
+                color: c.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),

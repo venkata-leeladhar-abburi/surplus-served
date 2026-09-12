@@ -5,6 +5,7 @@ import 'package:ss_design_system/ss_design_system.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
+import '../../../../shared/widgets/connectivity_banner.dart';
 import '../../domain/user_role.dart';
 import 'otp_screen.dart';
 
@@ -50,36 +51,46 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(backgroundColor: c.background, elevation: 0),
-      body: Padding(
-        padding: const EdgeInsets.all(SsSpacing.xl),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(l10n.authPhoneTitle, style: SsTypeScale.h3.copyWith(color: c.onSurface)),
-            const SizedBox(height: SsSpacing.sm),
-            Text(
-              l10n.authPhoneSubtitle,
-              style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
+      body: Column(
+        children: [
+          const ConnectivityBanner(),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(SsSpacing.xl),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.authPhoneTitle,
+                    style: SsTypeScale.h3.copyWith(color: c.onSurface),
+                  ),
+                  const SizedBox(height: SsSpacing.sm),
+                  Text(
+                    l10n.authPhoneSubtitle,
+                    style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: SsSpacing.xl),
+                  SsTextField(
+                    label: l10n.authPhoneHint,
+                    controller: _controller,
+                    keyboardType: TextInputType.phone,
+                    prefixIcon: SsIcons.phone,
+                    errorText: _hasError ? l10n.authPhoneError : null,
+                    autofocus: true,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: SsSpacing.xl),
+                  SsButton.primary(
+                    label: l10n.authSendCodeCta,
+                    expand: true,
+                    isLoading: _sending,
+                    onPressed: _isValid && !_sending ? _sendOtp : null,
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: SsSpacing.xl),
-            SsTextField(
-              label: l10n.authPhoneHint,
-              controller: _controller,
-              keyboardType: TextInputType.phone,
-              prefixIcon: SsIcons.phone,
-              errorText: _hasError ? l10n.authPhoneError : null,
-              autofocus: true,
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: SsSpacing.xl),
-            SsButton.primary(
-              label: l10n.authSendCodeCta,
-              expand: true,
-              isLoading: _sending,
-              onPressed: _isValid && !_sending ? _sendOtp : null,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

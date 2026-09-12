@@ -20,7 +20,9 @@
   "authOtpError": "ఆ కోడ్ పని చేయలేదు. మళ్లీ ప్రయత్నించండి.",
   "authVerifyCta": "ధృవీకరించండి",
 
-  "commonError": "ఏదో తప్పు జరిగింది: {error}",
+  "commonErrorTitle": "ఏదో తప్పు జరిగింది",
+  "commonErrorMessage": "దీన్ని లోడ్ చేయలేకపోయాము. మీ కనెక్షన్‌ని తనిఖీ చేసి మళ్లీ ప్రయత్నించండి.",
+  "offlineBannerMessage": "మీరు ఆఫ్‌లైన్‌లో ఉన్నారు — కొంత సమాచారం పాతదిగా ఉండవచ్చు.",
   "commonPortionsLabel": "{count} వంతులు",
   "commonPickupAddressLabel": "పికప్ చిరునామా",
   "commonLocality": "ప్రాంతం",

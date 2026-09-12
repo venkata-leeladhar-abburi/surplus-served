@@ -39,7 +39,8 @@ class RoleSelectScreen extends StatelessWidget {
                 illustration: SsIllustrations.roleReceiver,
                 title: l10n.roleReceiver,
                 subtitle: l10n.roleReceiverSubtitle,
-                onTap: () => context.pushNamed('phone', extra: UserRole.receiver),
+                onTap: () =>
+                    context.pushNamed('phone', extra: UserRole.receiver),
               ),
               const Spacer(flex: 2),
             ],
@@ -89,11 +90,17 @@ class _RoleCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title,
-                          style: SsTypeScale.h4.copyWith(color: c.onSurface)),
+                      Text(
+                        title,
+                        style: SsTypeScale.h4.copyWith(color: c.onSurface),
+                      ),
                       const SizedBox(height: 2),
-                      Text(subtitle,
-                          style: SsTypeScale.small.copyWith(color: c.onSurfaceVariant)),
+                      Text(
+                        subtitle,
+                        style: SsTypeScale.small.copyWith(
+                          color: c.onSurfaceVariant,
+                        ),
+                      ),
                     ],
                   ),
                 ),

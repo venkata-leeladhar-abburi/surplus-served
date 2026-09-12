@@ -58,7 +58,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: sessionListenable,
     redirect: (context, state) {
       final session = ref.read(sessionProvider);
-      final loggingIn = state.matchedLocation == '/' ||
+      final loggingIn =
+          state.matchedLocation == '/' ||
           state.matchedLocation.startsWith('/role') ||
           state.matchedLocation.startsWith('/auth');
 
@@ -67,10 +68,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       // Role guard (ARCHITECTURE.md §2): a donor can never land on a
       // receiver route and vice versa, even via a deep link.
-      if (session.role == UserRole.donor && state.matchedLocation.startsWith('/receiver')) {
+      if (session.role == UserRole.donor &&
+          state.matchedLocation.startsWith('/receiver')) {
         return '/donor';
       }
-      if (session.role == UserRole.receiver && state.matchedLocation.startsWith('/donor')) {
+      if (session.role == UserRole.receiver &&
+          state.matchedLocation.startsWith('/donor')) {
         return '/receiver';
       }
       if (loggingIn) {
@@ -92,7 +95,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/auth/phone',
         name: AppRoute.phone,
-        builder: (context, state) => PhoneScreen(role: state.extra! as UserRole),
+        builder: (context, state) =>
+            PhoneScreen(role: state.extra! as UserRole),
       ),
       GoRoute(
         path: '/auth/otp',
@@ -117,8 +121,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'donation/:id',
             name: AppRoute.donorDonationDetail,
-            builder: (context, state) =>
-                DonorDonationDetailScreen(donationId: state.pathParameters['id']!),
+            builder: (context, state) => DonorDonationDetailScreen(
+              donationId: state.pathParameters['id']!,
+            ),
           ),
           GoRoute(
             path: 'recurring',

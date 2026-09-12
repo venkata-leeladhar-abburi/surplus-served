@@ -5,6 +5,7 @@ import 'package:ss_design_system/ss_design_system.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../shared/utils/status_mapper.dart';
+import '../../../../shared/widgets/async_error_view.dart';
 import '../../../../shared/widgets/role_scaffold.dart';
 import '../../../../shared/widgets/role_tabs.dart';
 import '../../../donation/domain/donation.dart';
@@ -24,7 +25,10 @@ class ReceiverFeedScreen extends ConsumerWidget {
       appBarTitle: l10n.receiverFeedTitle,
       body: feedAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text(l10n.commonError('$err'))),
+        error: (err, _) => AsyncErrorView(
+          error: err,
+          onRetry: () => ref.invalidate(receiverFeedProvider),
+        ),
         data: (donations) {
           if (donations.isEmpty) {
             return Center(
@@ -64,6 +68,8 @@ class ReceiverFeedScreen extends ConsumerWidget {
 
   String _timeLeftLabel(Donation d, AppLocalizations l10n) {
     final minutes = d.minutesRemaining(DateTime.now());
-    return minutes >= 60 ? l10n.timeLeftHours((minutes / 60).floor()) : l10n.timeLeftMinutes(minutes);
+    return minutes >= 60
+        ? l10n.timeLeftHours((minutes / 60).floor())
+        : l10n.timeLeftMinutes(minutes);
   }
 }

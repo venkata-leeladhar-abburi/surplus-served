@@ -5,6 +5,7 @@ import 'package:ss_design_system/ss_design_system.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
+import '../../../../shared/widgets/connectivity_banner.dart';
 import '../../domain/allocation_repository.dart';
 
 /// §12's entire proof mechanism for v1: the NGO reads the 4-digit code off
@@ -15,7 +16,8 @@ class EnterPickupCodeScreen extends ConsumerStatefulWidget {
   final String donationId;
 
   @override
-  ConsumerState<EnterPickupCodeScreen> createState() => _EnterPickupCodeScreenState();
+  ConsumerState<EnterPickupCodeScreen> createState() =>
+      _EnterPickupCodeScreenState();
 }
 
 class _EnterPickupCodeScreenState extends ConsumerState<EnterPickupCodeScreen> {
@@ -28,14 +30,16 @@ class _EnterPickupCodeScreenState extends ConsumerState<EnterPickupCodeScreen> {
       _checking = true;
       _hasError = false;
     });
-    final result = await ref.read(allocationRepositoryProvider).enterPickupCode(
-          donationId: widget.donationId,
-          code: _controller.text,
-        );
+    final result = await ref
+        .read(allocationRepositoryProvider)
+        .enterPickupCode(donationId: widget.donationId, code: _controller.text);
     if (!mounted) return;
     setState(() => _checking = false);
     if (result == CodeEntryResult.success) {
-      context.goNamed('receiverHandoverSuccess', pathParameters: {'id': widget.donationId});
+      context.goNamed(
+        'receiverHandoverSuccess',
+        pathParameters: {'id': widget.donationId},
+      );
     } else {
       setState(() => _hasError = true);
     }
@@ -55,36 +59,48 @@ class _EnterPickupCodeScreenState extends ConsumerState<EnterPickupCodeScreen> {
           onPressed: () => context.pop(),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(SsSpacing.xl),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(l10n.receiverEnterCodeTitle, style: SsTypeScale.h3.copyWith(color: c.onSurface)),
-            const SizedBox(height: SsSpacing.sm),
-            Text(
-              l10n.receiverEnterCodeSubtitle,
-              style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
+      body: Column(
+        children: [
+          const ConnectivityBanner(),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(SsSpacing.xl),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.receiverEnterCodeTitle,
+                    style: SsTypeScale.h3.copyWith(color: c.onSurface),
+                  ),
+                  const SizedBox(height: SsSpacing.sm),
+                  Text(
+                    l10n.receiverEnterCodeSubtitle,
+                    style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: SsSpacing.xxl),
+                  SsTextField(
+                    label: l10n.donorPickupCodeLabel,
+                    controller: _controller,
+                    keyboardType: TextInputType.number,
+                    maxLength: 4,
+                    errorText: _hasError ? l10n.receiverEnterCodeError : null,
+                    autofocus: true,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: SsSpacing.xl),
+                  SsButton.primary(
+                    label: l10n.receiverConfirmCollectedCta,
+                    expand: true,
+                    isLoading: _checking,
+                    onPressed: _controller.text.length == 4 && !_checking
+                        ? _submit
+                        : null,
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: SsSpacing.xxl),
-            SsTextField(
-              label: l10n.donorPickupCodeLabel,
-              controller: _controller,
-              keyboardType: TextInputType.number,
-              maxLength: 4,
-              errorText: _hasError ? l10n.receiverEnterCodeError : null,
-              autofocus: true,
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: SsSpacing.xl),
-            SsButton.primary(
-              label: l10n.receiverConfirmCollectedCta,
-              expand: true,
-              isLoading: _checking,
-              onPressed: _controller.text.length == 4 && !_checking ? _submit : null,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

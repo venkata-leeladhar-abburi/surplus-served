@@ -12,7 +12,8 @@ final receiverDonationsProvider = StreamProvider<List<Donation>>((ref) {
   if (session == null) return const Stream.empty();
   final store = ref.watch(fixtureStoreProvider);
   return store.watchAll().map(
-        (all) => all.where((d) => d.allocatedToNgoId == session.userId).toList()
+    (all) =>
+        all.where((d) => d.allocatedToNgoId == session.userId).toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt)),
-      );
+  );
 });

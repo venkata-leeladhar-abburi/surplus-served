@@ -5,6 +5,7 @@ import 'package:ss_design_system/ss_design_system.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../shared/utils/status_mapper.dart';
+import '../../../../shared/widgets/async_error_view.dart';
 import '../../../../shared/widgets/role_scaffold.dart';
 import '../../../../shared/widgets/role_tabs.dart';
 import '../../../donation/presentation/controllers/donation_providers.dart';
@@ -25,9 +26,14 @@ class DonorHistoryScreen extends ConsumerWidget {
       appBarTitle: l10n.historyTitle,
       body: donationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text(l10n.commonError('$err'))),
+        error: (err, _) => AsyncErrorView(
+          error: err,
+          onRetry: () => ref.invalidate(donorDonationsProvider),
+        ),
         data: (allDonations) {
-          final history = allDonations.where((d) => !d.status.isActive).toList();
+          final history = allDonations
+              .where((d) => !d.status.isActive)
+              .toList();
           if (history.isEmpty) {
             return Center(
               child: SsEmptyState(
@@ -45,7 +51,11 @@ class DonorHistoryScreen extends ConsumerWidget {
               final d = history[i];
               return SsListTile(
                 title: d.title,
-                subtitle: l10n.historyDonorSubtitle(d.portions, d.createdAt.day, d.createdAt.month),
+                subtitle: l10n.historyDonorSubtitle(
+                  d.portions,
+                  d.createdAt.day,
+                  d.createdAt.month,
+                ),
                 trailing: SsStatusBadge(
                   status: d.status.ssStatus,
                   label: d.status.label(l10n),

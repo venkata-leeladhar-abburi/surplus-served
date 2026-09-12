@@ -22,8 +22,9 @@
   "authOtpError": "That code didn't work. Try again.",
   "authVerifyCta": "Verify",
 
-  "commonError": "Something went wrong: {error}",
-  "@commonError": {"placeholders": {"error": {"type": "String"}}},
+  "commonErrorTitle": "Something went wrong",
+  "commonErrorMessage": "We couldn't load this. Check your connection and try again.",
+  "offlineBannerMessage": "You're offline — some information may be out of date.",
   "commonPortionsLabel": "{count} portions",
   "@commonPortionsLabel": {"placeholders": {"count": {"type": "int"}}},
   "commonPickupAddressLabel": "Pickup address",

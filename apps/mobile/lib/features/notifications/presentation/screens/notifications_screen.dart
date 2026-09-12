@@ -4,6 +4,7 @@ import 'package:ss_design_system/ss_design_system.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
+import '../../../../shared/widgets/async_error_view.dart';
 import '../../../../shared/widgets/role_scaffold.dart';
 import '../../../../shared/widgets/role_tabs.dart';
 import '../../../auth/domain/user_role.dart';
@@ -26,7 +27,10 @@ class NotificationsScreen extends ConsumerWidget {
       appBarTitle: l10n.notificationsTitle,
       body: notificationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text(l10n.commonError('$err'))),
+        error: (err, _) => AsyncErrorView(
+          error: err,
+          onRetry: () => ref.invalidate(notificationsProvider),
+        ),
         data: (notifications) {
           if (notifications.isEmpty) {
             return Center(
@@ -58,7 +62,8 @@ class NotificationsScreen extends ConsumerWidget {
                   NotificationTone.warning => SsIcons.alert,
                   NotificationTone.info => SsIcons.bell,
                 },
-                onTap: () => ref.read(notificationRepositoryProvider).markRead(n.id),
+                onTap: () =>
+                    ref.read(notificationRepositoryProvider).markRead(n.id),
               );
             },
           );

@@ -17,7 +17,9 @@ import '../shared/fixtures/fixture_store.dart';
 
 /// The one place a concrete repository is chosen. A real build swaps the
 /// fixture for a Dio/Drift-backed implementation here and nowhere else.
-final fixtureStoreProvider = Provider<FixtureStore>((ref) => FixtureStore.instance);
+final fixtureStoreProvider = Provider<FixtureStore>(
+  (ref) => FixtureStore.instance,
+);
 
 final donationRepositoryProvider = Provider<DonationRepository>(
   (ref) => DonationRepositoryFixture(ref.watch(fixtureStoreProvider)),
@@ -31,7 +33,9 @@ final allocationRepositoryProvider = Provider<AllocationRepository>(
   (ref) => AllocationRepositoryFixture(ref.watch(fixtureStoreProvider)),
 );
 
-final authRepositoryProvider = Provider<AuthRepository>((ref) => AuthRepositoryFixture());
+final authRepositoryProvider = Provider<AuthRepository>(
+  (ref) => AuthRepositoryFixture(),
+);
 
 final recurringRepositoryProvider = Provider<RecurringRepository>(
   (ref) => RecurringRepositoryFixture(ref.watch(donationRepositoryProvider)),
@@ -52,4 +56,6 @@ class SessionNotifier extends Notifier<Session?> {
   void signOut() => state = null;
 }
 
-final sessionProvider = NotifierProvider<SessionNotifier, Session?>(SessionNotifier.new);
+final sessionProvider = NotifierProvider<SessionNotifier, Session?>(
+  SessionNotifier.new,
+);

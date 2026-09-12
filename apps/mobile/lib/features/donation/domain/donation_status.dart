@@ -20,32 +20,39 @@ enum DonationStatus {
   /// Legal next states from this one. Anything not listed is not a
   /// transition the app (or a malformed server payload) should perform.
   Set<DonationStatus> get nextStates => switch (this) {
-        DonationStatus.draft => {DonationStatus.pendingCheck, DonationStatus.cancelled},
-        DonationStatus.pendingCheck => {DonationStatus.live, DonationStatus.rejected},
-        DonationStatus.live => {
-            DonationStatus.allocated,
-            DonationStatus.cancelled,
-            DonationStatus.unfulfilled,
-          },
-        DonationStatus.allocated => {
-            DonationStatus.collected,
-            DonationStatus.reallocated,
-          },
-        DonationStatus.reallocated => {
-            DonationStatus.allocated,
-            DonationStatus.unfulfilled,
-          },
-        DonationStatus.collected => const {},
-        DonationStatus.unfulfilled => const {},
-        DonationStatus.cancelled => const {},
-        DonationStatus.rejected => const {},
-      };
+    DonationStatus.draft => {
+      DonationStatus.pendingCheck,
+      DonationStatus.cancelled,
+    },
+    DonationStatus.pendingCheck => {
+      DonationStatus.live,
+      DonationStatus.rejected,
+    },
+    DonationStatus.live => {
+      DonationStatus.allocated,
+      DonationStatus.cancelled,
+      DonationStatus.unfulfilled,
+    },
+    DonationStatus.allocated => {
+      DonationStatus.collected,
+      DonationStatus.reallocated,
+    },
+    DonationStatus.reallocated => {
+      DonationStatus.allocated,
+      DonationStatus.unfulfilled,
+    },
+    DonationStatus.collected => const {},
+    DonationStatus.unfulfilled => const {},
+    DonationStatus.cancelled => const {},
+    DonationStatus.rejected => const {},
+  };
 
   bool canTransitionTo(DonationStatus next) => nextStates.contains(next);
 
   /// Whether this donation is still someone's active concern — i.e. it
   /// belongs in a "live"/"in progress" list rather than history.
-  bool get isActive => this == DonationStatus.pendingCheck ||
+  bool get isActive =>
+      this == DonationStatus.pendingCheck ||
       this == DonationStatus.live ||
       this == DonationStatus.allocated ||
       this == DonationStatus.reallocated;

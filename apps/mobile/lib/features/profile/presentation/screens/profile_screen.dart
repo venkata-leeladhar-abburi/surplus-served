@@ -29,23 +29,42 @@ class ProfileScreen extends ConsumerWidget {
           children: [
             Row(
               children: [
-                SsAvatar(name: session?.name ?? '', size: 56, verified: !isDonor),
+                SsAvatar(
+                  name: session?.name ?? '',
+                  size: 56,
+                  verified: !isDonor,
+                ),
                 const SizedBox(width: SsSpacing.lg),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(session?.name ?? '', style: SsTypeScale.h4.copyWith(color: c.onSurface)),
+                      Text(
+                        session?.name ?? '',
+                        style: SsTypeScale.h4.copyWith(color: c.onSurface),
+                      ),
                       const SizedBox(height: 2),
-                      Text(session?.phone ?? '',
-                          style: SsTypeScale.small.copyWith(color: c.onSurfaceVariant)),
+                      Text(
+                        session?.phone ?? '',
+                        style: SsTypeScale.small.copyWith(
+                          color: c.onSurfaceVariant,
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 if (isDonor)
-                  SsTag(label: l10n.profileTagDonor, icon: SsIcons.donate, tone: SsTagTone.positive)
+                  SsTag(
+                    label: l10n.profileTagDonor,
+                    icon: SsIcons.donate,
+                    tone: SsTagTone.positive,
+                  )
                 else
-                  SsTag(label: l10n.profileTagVerifiedNgo, icon: SsIcons.verified, tone: SsTagTone.info),
+                  SsTag(
+                    label: l10n.profileTagVerifiedNgo,
+                    icon: SsIcons.verified,
+                    tone: SsTagTone.info,
+                  ),
               ],
             ),
             const SizedBox(height: SsSpacing.xxl),

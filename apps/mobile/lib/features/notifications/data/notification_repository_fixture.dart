@@ -24,7 +24,8 @@ class NotificationRepositoryFixture implements NotificationRepository {
       AppNotification(
         id: 'n-2',
         title: 'New donation nearby',
-        body: 'Vegetable biryani, 40 portions, just went live in Jubilee Hills.',
+        body:
+            'Vegetable biryani, 40 portions, just went live in Jubilee Hills.',
         createdAt: now.subtract(const Duration(minutes: 15)),
         tone: NotificationTone.info,
       ),
@@ -33,7 +34,8 @@ class NotificationRepositoryFixture implements NotificationRepository {
     }
   }
 
-  void _emit() => _controller.add(_notifications.values.toList(growable: false));
+  void _emit() =>
+      _controller.add(_notifications.values.toList(growable: false));
 
   @override
   Stream<List<AppNotification>> watchForUser(String userId) async* {

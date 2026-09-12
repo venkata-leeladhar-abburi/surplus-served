@@ -8,5 +8,7 @@ import '../../../donation/domain/donation.dart';
 /// the query shape identical to the real PostGIS-backed one.
 final receiverFeedProvider = StreamProvider<List<Donation>>((ref) {
   final session = ref.watch(sessionProvider);
-  return ref.watch(discoveryRepositoryProvider).watchLiveFeed(excludeDonorId: session?.userId);
+  return ref
+      .watch(discoveryRepositoryProvider)
+      .watchLiveFeed(excludeDonorId: session?.userId);
 });

@@ -15,7 +15,11 @@ class AllocationRepositoryFixture implements AllocationRepository {
   }) async {
     // Real backend: BullMQ `allocate` job over a PostGIS candidate set,
     // pushed via Socket.IO/FCM (ARCHITECTURE.md §3). Fixture: synchronous.
-    return _store.allocate(donationId: donationId, ngoId: ngoId, ngoName: ngoName);
+    return _store.allocate(
+      donationId: donationId,
+      ngoId: ngoId,
+      ngoName: ngoName,
+    );
   }
 
   @override

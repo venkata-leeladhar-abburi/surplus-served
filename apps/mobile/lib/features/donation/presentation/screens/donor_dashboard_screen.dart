@@ -6,6 +6,7 @@ import 'package:ss_design_system/ss_design_system.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
 import '../../../../shared/utils/status_mapper.dart';
+import '../../../../shared/widgets/async_error_view.dart';
 import '../../../../shared/widgets/role_scaffold.dart';
 import '../../../../shared/widgets/role_tabs.dart';
 import '../../domain/donation.dart';
@@ -33,18 +34,25 @@ class DonorDashboardScreen extends ConsumerWidget {
       ),
       body: donationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text(l10n.commonError('$err'))),
+        error: (err, _) => AsyncErrorView(
+          error: err,
+          onRetry: () => ref.invalidate(donorDonationsProvider),
+        ),
         data: (allDonations) {
           // Terminal donations (collected, cancelled, ...) live in History —
           // this tab is "what's still in flight".
-          final donations = allDonations.where((d) => d.status.isActive).toList();
+          final donations = allDonations
+              .where((d) => d.status.isActive)
+              .toList();
           if (donations.isEmpty) {
             return Center(
               child: SsEmptyState(
                 title: l10n.donorDashboardEmptyTitle,
                 message: session == null
                     ? ''
-                    : l10n.donorDashboardEmptyMessage(session.name.split(' ').first),
+                    : l10n.donorDashboardEmptyMessage(
+                        session.name.split(' ').first,
+                      ),
                 illustration: SsIllustrations.nothingHereYet,
                 primaryActionLabel: l10n.donorCreateCta,
                 onPrimaryAction: () => context.pushNamed('donorCreate'),
@@ -93,14 +101,24 @@ class _DonationRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(donation.title, style: SsTypeScale.h4.copyWith(color: c.onSurface)),
+                    Text(
+                      donation.title,
+                      style: SsTypeScale.h4.copyWith(color: c.onSurface),
+                    ),
                     const SizedBox(height: 4),
-                    Text(l10n.commonPortionsLabel(donation.portions),
-                        style: SsTypeScale.small.copyWith(color: c.onSurfaceVariant)),
+                    Text(
+                      l10n.commonPortionsLabel(donation.portions),
+                      style: SsTypeScale.small.copyWith(
+                        color: c.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              SsStatusBadge(status: donation.status.ssStatus, label: donation.status.label(l10n)),
+              SsStatusBadge(
+                status: donation.status.ssStatus,
+                label: donation.status.label(l10n),
+              ),
             ],
           ),
         ),

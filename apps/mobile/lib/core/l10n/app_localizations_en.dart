@@ -64,9 +64,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authVerifyCta => 'Verify';
 
   @override
-  String commonError(String error) {
-    return 'Something went wrong: $error';
-  }
+  String get commonErrorTitle => 'Something went wrong';
+
+  @override
+  String get commonErrorMessage =>
+      'We couldn\'t load this. Check your connection and try again.';
+
+  @override
+  String get offlineBannerMessage =>
+      'You\'re offline — some information may be out of date.';
 
   @override
   String commonPortionsLabel(int count) {

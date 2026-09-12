@@ -10,9 +10,10 @@ class DonationRepositoryFixture implements DonationRepository {
   @override
   Stream<List<Donation>> watchDonorDonations(String donorId) {
     return _store.watchAll().map(
-          (all) => all.where((d) => d.donorId == donorId).toList()
+      (all) =>
+          all.where((d) => d.donorId == donorId).toList()
             ..sort((a, b) => b.createdAt.compareTo(a.createdAt)),
-        );
+    );
   }
 
   @override

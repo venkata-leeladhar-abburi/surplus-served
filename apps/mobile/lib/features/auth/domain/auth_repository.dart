@@ -6,5 +6,9 @@ abstract class AuthRepository {
   /// number and any 4-digit code.
   Future<void> sendOtp(String phone);
 
-  Future<Session> verifyOtp({required String phone, required String otp, required UserRole role});
+  Future<Session> verifyOtp({
+    required String phone,
+    required String otp,
+    required UserRole role,
+  });
 }

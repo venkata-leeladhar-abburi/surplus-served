@@ -23,7 +23,10 @@ class HandoverSuccessScreen extends StatelessWidget {
             children: [
               const SsIllustration(SsIllustrations.goodFoodShared, width: 200),
               const SizedBox(height: SsSpacing.xl),
-              Text(l10n.receiverCollectedTitle, style: SsTypeScale.h2.copyWith(color: c.onSurface)),
+              Text(
+                l10n.receiverCollectedTitle,
+                style: SsTypeScale.h2.copyWith(color: c.onSurface),
+              ),
               const SizedBox(height: SsSpacing.sm),
               Text(
                 l10n.receiverCollectedMessage,

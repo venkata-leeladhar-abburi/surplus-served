@@ -18,11 +18,11 @@ class AppNotification {
   final bool read;
 
   AppNotification copyWith({bool? read}) => AppNotification(
-        id: id,
-        title: title,
-        body: body,
-        createdAt: createdAt,
-        tone: tone,
-        read: read ?? this.read,
-      );
+    id: id,
+    title: title,
+    body: body,
+    createdAt: createdAt,
+    tone: tone,
+    read: read ?? this.read,
+  );
 }

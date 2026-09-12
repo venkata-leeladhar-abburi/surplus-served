@@ -64,9 +64,15 @@ class AppLocalizationsTe extends AppLocalizations {
   String get authVerifyCta => 'ధృవీకరించండి';
 
   @override
-  String commonError(String error) {
-    return 'ఏదో తప్పు జరిగింది: $error';
-  }
+  String get commonErrorTitle => 'ఏదో తప్పు జరిగింది';
+
+  @override
+  String get commonErrorMessage =>
+      'దీన్ని లోడ్ చేయలేకపోయాము. మీ కనెక్షన్‌ని తనిఖీ చేసి మళ్లీ ప్రయత్నించండి.';
+
+  @override
+  String get offlineBannerMessage =>
+      'మీరు ఆఫ్‌లైన్‌లో ఉన్నారు — కొంత సమాచారం పాతదిగా ఉండవచ్చు.';
 
   @override
   String commonPortionsLabel(int count) {

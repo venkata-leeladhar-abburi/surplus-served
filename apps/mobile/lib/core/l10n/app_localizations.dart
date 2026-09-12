@@ -200,11 +200,23 @@ abstract class AppLocalizations {
   /// **'Verify'**
   String get authVerifyCta;
 
-  /// No description provided for @commonError.
+  /// No description provided for @commonErrorTitle.
   ///
   /// In en, this message translates to:
-  /// **'Something went wrong: {error}'**
-  String commonError(String error);
+  /// **'Something went wrong'**
+  String get commonErrorTitle;
+
+  /// No description provided for @commonErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load this. Check your connection and try again.'**
+  String get commonErrorMessage;
+
+  /// No description provided for @offlineBannerMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re offline — some information may be out of date.'**
+  String get offlineBannerMessage;
 
   /// No description provided for @commonPortionsLabel.
   ///

@@ -5,6 +5,7 @@ import 'package:ss_design_system/ss_design_system.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../shared/utils/status_mapper.dart';
+import '../../../../shared/widgets/async_error_view.dart';
 import '../../../../shared/widgets/role_scaffold.dart';
 import '../../../../shared/widgets/role_tabs.dart';
 import '../../../donation/domain/donation_status.dart';
@@ -26,10 +27,17 @@ class MyRequestsScreen extends ConsumerWidget {
       appBarTitle: l10n.receiverRequestsTitle,
       body: donationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text(l10n.commonError('$err'))),
+        error: (err, _) => AsyncErrorView(
+          error: err,
+          onRetry: () => ref.invalidate(receiverDonationsProvider),
+        ),
         data: (allDonations) {
           final active = allDonations
-              .where((d) => d.status == DonationStatus.allocated || d.status == DonationStatus.reallocated)
+              .where(
+                (d) =>
+                    d.status == DonationStatus.allocated ||
+                    d.status == DonationStatus.reallocated,
+              )
               .toList();
           if (active.isEmpty) {
             return Center(

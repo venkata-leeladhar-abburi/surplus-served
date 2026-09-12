@@ -34,7 +34,10 @@ class _SplashScreenState extends State<SplashScreen> {
           children: [
             const SsIllustration(SsIllustrations.onboardingWelcome, width: 180),
             const SizedBox(height: SsSpacing.xl),
-            Text(l10n.appTitle, style: SsTypeScale.h2.copyWith(color: c.onSurface)),
+            Text(
+              l10n.appTitle,
+              style: SsTypeScale.h2.copyWith(color: c.onSurface),
+            ),
             const SizedBox(height: SsSpacing.sm),
             Text(
               l10n.splashTagline,

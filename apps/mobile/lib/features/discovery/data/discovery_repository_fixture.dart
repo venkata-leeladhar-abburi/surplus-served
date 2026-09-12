@@ -11,13 +11,16 @@ class DiscoveryRepositoryFixture implements DiscoveryRepository {
   @override
   Stream<List<Donation>> watchLiveFeed({String? excludeDonorId}) {
     return _store.watchAll().map(
-          (all) => all
-              .where((d) =>
-                  d.status == DonationStatus.live &&
-                  d.donorId != excludeDonorId)
+      (all) =>
+          all
+              .where(
+                (d) =>
+                    d.status == DonationStatus.live &&
+                    d.donorId != excludeDonorId,
+              )
               .toList()
             ..sort((a, b) => a.pickupWindowEnd.compareTo(b.pickupWindowEnd)),
-        );
+    );
   }
 
   @override

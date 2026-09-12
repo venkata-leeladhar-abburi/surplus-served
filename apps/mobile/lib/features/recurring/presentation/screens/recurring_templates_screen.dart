@@ -4,6 +4,7 @@ import 'package:ss_design_system/ss_design_system.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
+import '../../../../shared/widgets/async_error_view.dart';
 import '../../../../shared/widgets/role_scaffold.dart';
 import '../../../../shared/widgets/role_tabs.dart';
 import '../../domain/recurring_template.dart';
@@ -30,7 +31,10 @@ class RecurringTemplatesScreen extends ConsumerWidget {
       ),
       body: templatesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text(l10n.commonError('$err'))),
+        error: (err, _) => AsyncErrorView(
+          error: err,
+          onRetry: () => ref.invalidate(recurringTemplatesProvider),
+        ),
         data: (templates) {
           if (templates.isEmpty) {
             return Center(
@@ -39,7 +43,8 @@ class RecurringTemplatesScreen extends ConsumerWidget {
                 message: l10n.recurringEmptyMessage,
                 illustration: SsIllustrations.nothingHereYet,
                 primaryActionLabel: l10n.recurringSetupCta,
-                onPrimaryAction: () => showCreateRecurringTemplateSheet(context, ref),
+                onPrimaryAction: () =>
+                    showCreateRecurringTemplateSheet(context, ref),
               ),
             );
           }
@@ -77,17 +82,31 @@ class _TemplateCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Text(template.title, style: SsTypeScale.h4.copyWith(color: c.onSurface)),
+                child: Text(
+                  template.title,
+                  style: SsTypeScale.h4.copyWith(color: c.onSurface),
+                ),
               ),
               if (template.confirmedToday)
-                SsTag(label: l10n.recurringPostedTodayTag, icon: SsIcons.check, tone: SsTagTone.positive)
+                SsTag(
+                  label: l10n.recurringPostedTodayTag,
+                  icon: SsIcons.check,
+                  tone: SsTagTone.positive,
+                )
               else if (template.skippedToday)
-                SsTag(label: l10n.recurringSkippedTodayTag, tone: SsTagTone.neutral),
+                SsTag(
+                  label: l10n.recurringSkippedTodayTag,
+                  tone: SsTagTone.neutral,
+                ),
             ],
           ),
           const SizedBox(height: 4),
           Text(
-            l10n.recurringCardSubtitle(template.portions, template.windowHours, template.locality),
+            l10n.recurringCardSubtitle(
+              template.portions,
+              template.windowHours,
+              template.locality,
+            ),
             style: SsTypeScale.small.copyWith(color: c.onSurfaceVariant),
           ),
           if (template.needsTodayDecision) ...[
@@ -97,14 +116,18 @@ class _TemplateCard extends ConsumerWidget {
                 Expanded(
                   child: SsButton.secondary(
                     label: l10n.recurringSkipCta,
-                    onPressed: () => ref.read(recurringRepositoryProvider).skipToday(template.id),
+                    onPressed: () => ref
+                        .read(recurringRepositoryProvider)
+                        .skipToday(template.id),
                   ),
                 ),
                 const SizedBox(width: SsSpacing.md),
                 Expanded(
                   child: SsButton.primary(
                     label: l10n.recurringConfirmCta,
-                    onPressed: () => ref.read(recurringRepositoryProvider).confirmToday(template.id),
+                    onPressed: () => ref
+                        .read(recurringRepositoryProvider)
+                        .confirmToday(template.id),
                   ),
                 ),
               ],
