@@ -9,6 +9,10 @@ import '../features/discovery/data/discovery_repository_fixture.dart';
 import '../features/discovery/domain/discovery_repository.dart';
 import '../features/donation/data/donation_repository_fixture.dart';
 import '../features/donation/domain/donation_repository.dart';
+import '../features/notifications/data/notification_repository_fixture.dart';
+import '../features/notifications/domain/notification_repository.dart';
+import '../features/recurring/data/recurring_repository_fixture.dart';
+import '../features/recurring/domain/recurring_repository.dart';
 import '../shared/fixtures/fixture_store.dart';
 
 /// The one place a concrete repository is chosen. A real build swaps the
@@ -28,6 +32,14 @@ final allocationRepositoryProvider = Provider<AllocationRepository>(
 );
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) => AuthRepositoryFixture());
+
+final recurringRepositoryProvider = Provider<RecurringRepository>(
+  (ref) => RecurringRepositoryFixture(ref.watch(donationRepositoryProvider)),
+);
+
+final notificationRepositoryProvider = Provider<NotificationRepository>(
+  (ref) => NotificationRepositoryFixture(),
+);
 
 /// The signed-in session, or null when signed out. Set by the auth
 /// controller after OTP verification; read by the router's redirect guard.

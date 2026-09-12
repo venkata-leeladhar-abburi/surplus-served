@@ -5,6 +5,8 @@ import 'package:ss_design_system/ss_design_system.dart';
 
 import '../../../../core/providers.dart';
 import '../../../../shared/utils/status_mapper.dart';
+import '../../../../shared/widgets/role_scaffold.dart';
+import '../../../../shared/widgets/role_tabs.dart';
 import '../../domain/donation.dart';
 import '../controllers/donation_providers.dart';
 
@@ -17,20 +19,10 @@ class DonorDashboardScreen extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
     final donationsAsync = ref.watch(donorDonationsProvider);
 
-    return Scaffold(
-      backgroundColor: c.background,
-      appBar: AppBar(
-        backgroundColor: c.background,
-        elevation: 0,
-        title: Text('Your donations', style: SsTypeScale.h4.copyWith(color: c.onSurface)),
-        actions: [
-          IconButton(
-            icon: SsIcon(SsIcons.logout, color: c.onSurfaceVariant),
-            tooltip: 'Sign out',
-            onPressed: () => ref.read(sessionProvider.notifier).signOut(),
-          ),
-        ],
-      ),
+    return RoleScaffold(
+      currentIndex: 0,
+      tabs: donorTabs,
+      appBarTitle: 'Your donations',
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.pushNamed('donorCreate'),
         icon: SsIcon(SsIcons.addFood, color: c.onPrimary),
@@ -40,7 +32,10 @@ class DonorDashboardScreen extends ConsumerWidget {
       body: donationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(child: Text('Something went wrong: $err')),
-        data: (donations) {
+        data: (allDonations) {
+          // Terminal donations (collected, cancelled, ...) live in History —
+          // this tab is "what's still in flight".
+          final donations = allDonations.where((d) => d.status.isActive).toList();
           if (donations.isEmpty) {
             return Center(
               child: SsEmptyState(

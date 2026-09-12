@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
-import '../../../../core/providers.dart';
 import '../../../../shared/utils/status_mapper.dart';
+import '../../../../shared/widgets/role_scaffold.dart';
+import '../../../../shared/widgets/role_tabs.dart';
 import '../../../donation/domain/donation.dart';
 import '../controllers/discovery_providers.dart';
 
@@ -13,23 +14,12 @@ class ReceiverFeedScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.ssColors;
     final feedAsync = ref.watch(receiverFeedProvider);
 
-    return Scaffold(
-      backgroundColor: c.background,
-      appBar: AppBar(
-        backgroundColor: c.background,
-        elevation: 0,
-        title: Text('Nearby surplus', style: SsTypeScale.h4.copyWith(color: c.onSurface)),
-        actions: [
-          IconButton(
-            icon: SsIcon(SsIcons.logout, color: c.onSurfaceVariant),
-            tooltip: 'Sign out',
-            onPressed: () => ref.read(sessionProvider.notifier).signOut(),
-          ),
-        ],
-      ),
+    return RoleScaffold(
+      currentIndex: 0,
+      tabs: receiverTabs,
+      appBarTitle: 'Nearby surplus',
       body: feedAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(child: Text('Something went wrong: $err')),

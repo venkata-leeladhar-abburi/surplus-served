@@ -11,9 +11,15 @@ import '../../features/allocation/presentation/screens/enter_pickup_code_screen.
 import '../../features/allocation/presentation/screens/handover_success_screen.dart';
 import '../../features/discovery/presentation/screens/donation_detail_screen.dart';
 import '../../features/discovery/presentation/screens/receiver_feed_screen.dart';
+import '../../features/discovery/presentation/screens/my_requests_screen.dart';
 import '../../features/donation/presentation/screens/create_donation_screen.dart';
 import '../../features/donation/presentation/screens/donor_dashboard_screen.dart';
 import '../../features/donation/presentation/screens/donor_donation_detail_screen.dart';
+import '../../features/history/presentation/screens/donor_history_screen.dart';
+import '../../features/history/presentation/screens/receiver_history_screen.dart';
+import '../../features/notifications/presentation/screens/notifications_screen.dart';
+import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/recurring/presentation/screens/recurring_templates_screen.dart';
 import '../providers.dart';
 
 /// Route names — used instead of raw path strings anywhere a screen needs
@@ -27,11 +33,19 @@ abstract final class AppRoute {
   static const donorDashboard = 'donorDashboard';
   static const donorCreate = 'donorCreate';
   static const donorDonationDetail = 'donorDonationDetail';
+  static const donorRecurring = 'donorRecurring';
+  static const donorHistory = 'donorHistory';
+  static const donorNotifications = 'donorNotifications';
+  static const donorProfile = 'donorProfile';
 
   static const receiverFeed = 'receiverFeed';
   static const receiverDonationDetail = 'receiverDonationDetail';
   static const receiverEnterCode = 'receiverEnterCode';
   static const receiverHandoverSuccess = 'receiverHandoverSuccess';
+  static const receiverRequests = 'receiverRequests';
+  static const receiverHistory = 'receiverHistory';
+  static const receiverNotifications = 'receiverNotifications';
+  static const receiverProfile = 'receiverProfile';
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -106,6 +120,26 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) =>
                 DonorDonationDetailScreen(donationId: state.pathParameters['id']!),
           ),
+          GoRoute(
+            path: 'recurring',
+            name: AppRoute.donorRecurring,
+            builder: (context, state) => const RecurringTemplatesScreen(),
+          ),
+          GoRoute(
+            path: 'history',
+            name: AppRoute.donorHistory,
+            builder: (context, state) => const DonorHistoryScreen(),
+          ),
+          GoRoute(
+            path: 'notifications',
+            name: AppRoute.donorNotifications,
+            builder: (context, state) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: 'profile',
+            name: AppRoute.donorProfile,
+            builder: (context, state) => const ProfileScreen(),
+          ),
         ],
       ),
 
@@ -132,6 +166,26 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: AppRoute.receiverHandoverSuccess,
             builder: (context, state) =>
                 HandoverSuccessScreen(donationId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: 'requests',
+            name: AppRoute.receiverRequests,
+            builder: (context, state) => const MyRequestsScreen(),
+          ),
+          GoRoute(
+            path: 'history',
+            name: AppRoute.receiverHistory,
+            builder: (context, state) => const ReceiverHistoryScreen(),
+          ),
+          GoRoute(
+            path: 'notifications',
+            name: AppRoute.receiverNotifications,
+            builder: (context, state) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: 'profile',
+            name: AppRoute.receiverProfile,
+            builder: (context, state) => const ProfileScreen(),
           ),
         ],
       ),
