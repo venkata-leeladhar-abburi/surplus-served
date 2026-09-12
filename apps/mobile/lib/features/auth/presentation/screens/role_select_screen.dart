@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
+import '../../../../core/l10n/app_localizations.dart';
 import '../../domain/user_role.dart';
 
 /// Role picked before authentication, per scope §16: three roles only —
@@ -12,6 +13,7 @@ class RoleSelectScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.ssColors;
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: c.background,
       body: SafeArea(
@@ -22,21 +24,21 @@ class RoleSelectScreen extends StatelessWidget {
             children: [
               const Spacer(),
               Text(
-                'How will you use\nSurplus → Served?',
+                l10n.roleSelectTitle,
                 style: SsTypeScale.h2.copyWith(color: c.onSurface),
               ),
               const SizedBox(height: SsSpacing.xxl),
               _RoleCard(
                 illustration: SsIllustrations.roleDonor,
-                title: 'I have food to give',
-                subtitle: 'Restaurants, caterers, event kitchens',
+                title: l10n.roleDonor,
+                subtitle: l10n.roleDonorSubtitle,
                 onTap: () => context.pushNamed('phone', extra: UserRole.donor),
               ),
               const SizedBox(height: SsSpacing.lg),
               _RoleCard(
                 illustration: SsIllustrations.roleReceiver,
-                title: 'I run a verified NGO',
-                subtitle: 'Collect surplus food for people who need it',
+                title: l10n.roleReceiver,
+                subtitle: l10n.roleReceiverSubtitle,
                 onTap: () => context.pushNamed('phone', extra: UserRole.receiver),
               ),
               const Spacer(flex: 2),

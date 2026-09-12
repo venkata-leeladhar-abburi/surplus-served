@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
+import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
 import '../../../../shared/widgets/role_scaffold.dart';
 import '../../../../shared/widgets/role_tabs.dart';
@@ -16,28 +17,28 @@ class RecurringTemplatesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final templatesAsync = ref.watch(recurringTemplatesProvider);
 
     return RoleScaffold(
       currentIndex: 1,
-      tabs: donorTabs,
-      appBarTitle: 'Recurring donations',
+      tabs: donorTabs(l10n),
+      appBarTitle: l10n.recurringTitle,
       floatingActionButton: FloatingActionButton(
         onPressed: () => showCreateRecurringTemplateSheet(context, ref),
         child: SsIcon(SsIcons.plus, color: context.ssColors.onPrimary),
       ),
       body: templatesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Something went wrong: $err')),
+        error: (err, _) => Center(child: Text(l10n.commonError('$err'))),
         data: (templates) {
           if (templates.isEmpty) {
             return Center(
               child: SsEmptyState(
-                title: 'No recurring donations yet',
-                message: 'Set up a template for food you give away on a regular '
-                    "schedule — we'll ask you to confirm or skip each day.",
+                title: l10n.recurringEmptyTitle,
+                message: l10n.recurringEmptyMessage,
                 illustration: SsIllustrations.nothingHereYet,
-                primaryActionLabel: 'Set up a template',
+                primaryActionLabel: l10n.recurringSetupCta,
                 onPrimaryAction: () => showCreateRecurringTemplateSheet(context, ref),
               ),
             );
@@ -62,6 +63,7 @@ class _TemplateCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.ssColors;
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(SsSpacing.lg),
       decoration: BoxDecoration(
@@ -78,14 +80,14 @@ class _TemplateCard extends ConsumerWidget {
                 child: Text(template.title, style: SsTypeScale.h4.copyWith(color: c.onSurface)),
               ),
               if (template.confirmedToday)
-                SsTag(label: 'Posted today', icon: SsIcons.check, tone: SsTagTone.positive)
+                SsTag(label: l10n.recurringPostedTodayTag, icon: SsIcons.check, tone: SsTagTone.positive)
               else if (template.skippedToday)
-                SsTag(label: 'Skipped today', tone: SsTagTone.neutral),
+                SsTag(label: l10n.recurringSkippedTodayTag, tone: SsTagTone.neutral),
             ],
           ),
           const SizedBox(height: 4),
           Text(
-            '${template.portions} portions · ${template.windowHours} hr window · ${template.locality}',
+            l10n.recurringCardSubtitle(template.portions, template.windowHours, template.locality),
             style: SsTypeScale.small.copyWith(color: c.onSurfaceVariant),
           ),
           if (template.needsTodayDecision) ...[
@@ -94,14 +96,14 @@ class _TemplateCard extends ConsumerWidget {
               children: [
                 Expanded(
                   child: SsButton.secondary(
-                    label: 'Skip today',
+                    label: l10n.recurringSkipCta,
                     onPressed: () => ref.read(recurringRepositoryProvider).skipToday(template.id),
                   ),
                 ),
                 const SizedBox(width: SsSpacing.md),
                 Expanded(
                   child: SsButton.primary(
-                    label: 'Confirm today',
+                    label: l10n.recurringConfirmCta,
                     onPressed: () => ref.read(recurringRepositoryProvider).confirmToday(template.id),
                   ),
                 ),

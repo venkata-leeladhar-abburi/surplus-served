@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
+import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
 import '../../domain/allocation_repository.dart';
 
@@ -20,12 +21,12 @@ class EnterPickupCodeScreen extends ConsumerStatefulWidget {
 class _EnterPickupCodeScreenState extends ConsumerState<EnterPickupCodeScreen> {
   final _controller = TextEditingController();
   bool _checking = false;
-  String? _error;
+  bool _hasError = false;
 
   Future<void> _submit() async {
     setState(() {
       _checking = true;
-      _error = null;
+      _hasError = false;
     });
     final result = await ref.read(allocationRepositoryProvider).enterPickupCode(
           donationId: widget.donationId,
@@ -36,13 +37,14 @@ class _EnterPickupCodeScreenState extends ConsumerState<EnterPickupCodeScreen> {
     if (result == CodeEntryResult.success) {
       context.goNamed('receiverHandoverSuccess', pathParameters: {'id': widget.donationId});
     } else {
-      setState(() => _error = "That code doesn't match. Check with the donor and try again.");
+      setState(() => _hasError = true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final c = context.ssColors;
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(
@@ -58,25 +60,25 @@ class _EnterPickupCodeScreenState extends ConsumerState<EnterPickupCodeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Confirm handover', style: SsTypeScale.h3.copyWith(color: c.onSurface)),
+            Text(l10n.receiverEnterCodeTitle, style: SsTypeScale.h3.copyWith(color: c.onSurface)),
             const SizedBox(height: SsSpacing.sm),
             Text(
-              'Ask the donor for the 4-digit code shown on their screen.',
+              l10n.receiverEnterCodeSubtitle,
               style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
             ),
             const SizedBox(height: SsSpacing.xxl),
             SsTextField(
-              label: 'Pickup code',
+              label: l10n.donorPickupCodeLabel,
               controller: _controller,
               keyboardType: TextInputType.number,
               maxLength: 4,
-              errorText: _error,
+              errorText: _hasError ? l10n.receiverEnterCodeError : null,
               autofocus: true,
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: SsSpacing.xl),
             SsButton.primary(
-              label: 'Confirm collected',
+              label: l10n.receiverConfirmCollectedCta,
               expand: true,
               isLoading: _checking,
               onPressed: _controller.text.length == 4 && !_checking ? _submit : null,

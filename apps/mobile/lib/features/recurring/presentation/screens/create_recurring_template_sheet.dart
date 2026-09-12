@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
+import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
 
 Future<void> showCreateRecurringTemplateSheet(BuildContext context, WidgetRef ref) {
+  final l10n = AppLocalizations.of(context)!;
   return SsSheet.show<void>(
     context,
-    title: 'New recurring template',
+    title: l10n.recurringSheetTitle,
     child: _CreateTemplateForm(ref: ref),
   );
 }
@@ -48,6 +50,7 @@ class _CreateTemplateFormState extends State<_CreateTemplateForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(SsSpacing.xl, 0, SsSpacing.xl, SsSpacing.xl),
       child: Column(
@@ -55,15 +58,15 @@ class _CreateTemplateFormState extends State<_CreateTemplateForm> {
         mainAxisSize: MainAxisSize.min,
         children: [
           SsTextField(
-            label: 'What do you give away regularly?',
-            hint: 'e.g. Leftover lunch buffet',
+            label: l10n.recurringFoodLabel,
+            hint: l10n.recurringFoodHint,
             controller: _titleController,
             autofocus: true,
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: SsSpacing.md),
           SsTextField(
-            label: 'Locality',
+            label: l10n.commonLocality,
             controller: _localityController,
             prefixIcon: SsIcons.location,
             onChanged: (_) => setState(() {}),
@@ -73,7 +76,7 @@ class _CreateTemplateFormState extends State<_CreateTemplateForm> {
             children: [
               Expanded(
                 child: SsDropdown<int>(
-                  label: 'Portions',
+                  label: l10n.recurringPortionsLabel,
                   value: _portions,
                   items: const [10, 20, 30, 40, 50],
                   labelBuilder: (v) => '$v',
@@ -83,10 +86,10 @@ class _CreateTemplateFormState extends State<_CreateTemplateForm> {
               const SizedBox(width: SsSpacing.md),
               Expanded(
                 child: SsDropdown<int>(
-                  label: 'Window',
+                  label: l10n.recurringWindowLabel,
                   value: _windowHours,
                   items: const [1, 2, 3, 4],
-                  labelBuilder: (v) => '$v hr',
+                  labelBuilder: (v) => l10n.recurringHoursShort(v),
                   onChanged: (v) => setState(() => _windowHours = v ?? _windowHours),
                 ),
               ),
@@ -94,7 +97,7 @@ class _CreateTemplateFormState extends State<_CreateTemplateForm> {
           ),
           const SizedBox(height: SsSpacing.xl),
           SsButton.primary(
-            label: 'Save template',
+            label: l10n.recurringSaveCta,
             expand: true,
             isLoading: _saving,
             onPressed: _canSave && !_saving ? _save : null,

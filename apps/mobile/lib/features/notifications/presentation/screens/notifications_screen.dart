@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
+import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
 import '../../../../shared/widgets/role_scaffold.dart';
 import '../../../../shared/widgets/role_tabs.dart';
@@ -14,23 +15,24 @@ class NotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final session = ref.watch(sessionProvider);
     final isDonor = session?.role == UserRole.donor;
     final notificationsAsync = ref.watch(notificationsProvider);
 
     return RoleScaffold(
       currentIndex: 3,
-      tabs: isDonor ? donorTabs : receiverTabs,
-      appBarTitle: 'Notifications',
+      tabs: isDonor ? donorTabs(l10n) : receiverTabs(l10n),
+      appBarTitle: l10n.notificationsTitle,
       body: notificationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Something went wrong: $err')),
+        error: (err, _) => Center(child: Text(l10n.commonError('$err'))),
         data: (notifications) {
           if (notifications.isEmpty) {
             return Center(
               child: SsEmptyState(
-                title: 'Nothing yet',
-                message: "We'll let you know the moment something needs your attention.",
+                title: l10n.notificationsEmptyTitle,
+                message: l10n.notificationsEmptyMessage,
                 illustration: SsIllustrations.nothingHereYet,
               ),
             );
@@ -44,7 +46,7 @@ class NotificationsScreen extends ConsumerWidget {
               return SsNotificationTile(
                 title: n.title,
                 body: n.body,
-                timeAgo: _relativeTime(n.createdAt),
+                timeAgo: _relativeTime(n.createdAt, l10n),
                 unread: !n.read,
                 tone: switch (n.tone) {
                   NotificationTone.success => SsNotificationTone.success,
@@ -65,10 +67,10 @@ class NotificationsScreen extends ConsumerWidget {
     );
   }
 
-  String _relativeTime(DateTime time) {
+  String _relativeTime(DateTime time, AppLocalizations l10n) {
     final diff = DateTime.now().difference(time);
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    return '${diff.inDays}d ago';
+    if (diff.inMinutes < 60) return l10n.notifTimeMinutes(diff.inMinutes);
+    if (diff.inHours < 24) return l10n.notifTimeHours(diff.inHours);
+    return l10n.notifTimeDays(diff.inDays);
   }
 }

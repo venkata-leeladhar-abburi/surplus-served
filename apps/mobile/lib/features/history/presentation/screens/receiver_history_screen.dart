@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
+import '../../../../core/l10n/app_localizations.dart';
 import '../../../../shared/utils/status_mapper.dart';
 import '../../../../shared/widgets/role_scaffold.dart';
 import '../../../../shared/widgets/role_tabs.dart';
@@ -13,22 +14,23 @@ class ReceiverHistoryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final donationsAsync = ref.watch(receiverDonationsProvider);
 
     return RoleScaffold(
       currentIndex: 2,
-      tabs: receiverTabs,
-      appBarTitle: 'History',
+      tabs: receiverTabs(l10n),
+      appBarTitle: l10n.historyTitle,
       body: donationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Something went wrong: $err')),
+        error: (err, _) => Center(child: Text(l10n.commonError('$err'))),
         data: (allDonations) {
           final history = allDonations.where((d) => !d.status.isActive).toList();
           if (history.isEmpty) {
             return Center(
               child: SsEmptyState(
-                title: 'Nothing collected yet',
-                message: 'Donations you\'ve collected will show up here.',
+                title: l10n.receiverHistoryEmptyTitle,
+                message: l10n.receiverHistoryEmptyMessage,
                 illustration: SsIllustrations.noResultsFound,
               ),
             );
@@ -41,8 +43,12 @@ class ReceiverHistoryScreen extends ConsumerWidget {
               final d = history[i];
               return SsListTile(
                 title: d.title,
-                subtitle: 'From ${d.donorName} · ${d.createdAt.day}/${d.createdAt.month}',
-                trailing: SsStatusBadge(status: d.status.ssStatus, dense: true),
+                subtitle: l10n.historyReceiverSubtitle(d.donorName, d.createdAt.day, d.createdAt.month),
+                trailing: SsStatusBadge(
+                  status: d.status.ssStatus,
+                  label: d.status.label(l10n),
+                  dense: true,
+                ),
                 onTap: () => context.pushNamed(
                   'receiverDonationDetail',
                   pathParameters: {'id': d.id},

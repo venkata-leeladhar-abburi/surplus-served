@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
+import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
 import '../../../../shared/utils/status_mapper.dart';
 import '../../../donation/domain/donation_status.dart';
@@ -42,6 +43,7 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.ssColors;
+    final l10n = AppLocalizations.of(context)!;
     final donationAsync = ref.watch(donationByIdProvider(widget.donationId));
 
     return Scaffold(
@@ -56,7 +58,7 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
       ),
       body: donationAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Something went wrong: $err')),
+        error: (err, _) => Center(child: Text(l10n.commonError('$err'))),
         data: (donation) {
           final session = ref.watch(sessionProvider);
           final allocatedToMe = donation.status == DonationStatus.allocated &&
@@ -72,11 +74,11 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
                     Expanded(
                       child: Text(donation.title, style: SsTypeScale.h3.copyWith(color: c.onSurface)),
                     ),
-                    SsStatusBadge(status: donation.status.ssStatus),
+                    SsStatusBadge(status: donation.status.ssStatus, label: donation.status.label(l10n)),
                   ],
                 ),
                 const SizedBox(height: SsSpacing.sm),
-                Text('From ${donation.donorName}',
+                Text(l10n.receiverFromDonorLabel(donation.donorName),
                     style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant)),
                 const SizedBox(height: SsSpacing.lg),
                 if (donation.description != null) ...[
@@ -85,10 +87,10 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
                 ],
                 Row(
                   children: [
-                    SsTag(label: '${donation.portions} portions', icon: SsIcons.meals),
+                    SsTag(label: l10n.commonPortionsLabel(donation.portions), icon: SsIcons.meals),
                     const SizedBox(width: SsSpacing.sm),
                     SsTag(
-                      label: '${donation.minutesRemaining(DateTime.now())} min left',
+                      label: l10n.timeLeftMinutes(donation.minutesRemaining(DateTime.now())),
                       icon: SsIcons.time,
                       tone: SsTagTone.warm,
                     ),
@@ -109,14 +111,14 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
                 const SizedBox(height: SsSpacing.xxl),
                 if (donation.status == DonationStatus.live)
                   SsButton.primary(
-                    label: 'Request this',
+                    label: l10n.receiverRequestCta,
                     expand: true,
                     isLoading: _requesting,
                     onPressed: _requesting ? null : _request,
                   ),
                 if (allocatedToMe)
                   SsButton.primary(
-                    label: 'Enter pickup code',
+                    label: l10n.receiverEnterCodeCta,
                     expand: true,
                     onPressed: () => context.pushNamed(
                       'receiverEnterCode',

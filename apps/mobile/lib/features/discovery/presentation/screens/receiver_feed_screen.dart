@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
+import '../../../../core/l10n/app_localizations.dart';
 import '../../../../shared/utils/status_mapper.dart';
 import '../../../../shared/widgets/role_scaffold.dart';
 import '../../../../shared/widgets/role_tabs.dart';
@@ -14,21 +15,22 @@ class ReceiverFeedScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final feedAsync = ref.watch(receiverFeedProvider);
 
     return RoleScaffold(
       currentIndex: 0,
-      tabs: receiverTabs,
-      appBarTitle: 'Nearby surplus',
+      tabs: receiverTabs(l10n),
+      appBarTitle: l10n.receiverFeedTitle,
       body: feedAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Something went wrong: $err')),
+        error: (err, _) => Center(child: Text(l10n.commonError('$err'))),
         data: (donations) {
           if (donations.isEmpty) {
             return Center(
               child: SsEmptyState(
-                title: 'Nothing here yet',
-                message: 'New donations nearby will show up here the moment they go live.',
+                title: l10n.receiverFeedEmptyTitle,
+                message: l10n.receiverFeedEmptyBody,
                 illustration: SsIllustrations.noFoodAvailable,
               ),
             );
@@ -44,8 +46,9 @@ class ReceiverFeedScreen extends ConsumerWidget {
                 donorName: d.donorName,
                 imageUrl: null,
                 status: d.status.ssStatus,
-                servingsLabel: '${d.portions} portions',
-                timeLeftLabel: _timeLeftLabel(d),
+                statusLabel: d.status.label(l10n),
+                servingsLabel: l10n.commonPortionsLabel(d.portions),
+                timeLeftLabel: _timeLeftLabel(d, l10n),
                 distanceLabel: d.address.locality,
                 onTap: () => context.pushNamed(
                   'receiverDonationDetail',
@@ -59,8 +62,8 @@ class ReceiverFeedScreen extends ConsumerWidget {
     );
   }
 
-  String _timeLeftLabel(Donation d) {
+  String _timeLeftLabel(Donation d, AppLocalizations l10n) {
     final minutes = d.minutesRemaining(DateTime.now());
-    return minutes >= 60 ? '${(minutes / 60).floor()} hr left' : '$minutes min left';
+    return minutes >= 60 ? l10n.timeLeftHours((minutes / 60).floor()) : l10n.timeLeftMinutes(minutes);
   }
 }

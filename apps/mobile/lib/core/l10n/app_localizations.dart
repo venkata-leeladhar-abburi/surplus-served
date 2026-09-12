@@ -104,6 +104,12 @@ abstract class AppLocalizations {
   /// **'Surplus → Served'**
   String get appTitle;
 
+  /// No description provided for @splashTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Good food should keep moving.'**
+  String get splashTagline;
+
   /// No description provided for @roleSelectTitle.
   ///
   /// In en, this message translates to:
@@ -116,11 +122,23 @@ abstract class AppLocalizations {
   /// **'I have food to give'**
   String get roleDonor;
 
+  /// No description provided for @roleDonorSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restaurants, caterers, event kitchens'**
+  String get roleDonorSubtitle;
+
   /// No description provided for @roleReceiver.
   ///
   /// In en, this message translates to:
   /// **'I run a verified NGO'**
   String get roleReceiver;
+
+  /// No description provided for @roleReceiverSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect surplus food for people who need it'**
+  String get roleReceiverSubtitle;
 
   /// No description provided for @authPhoneTitle.
   ///
@@ -128,11 +146,29 @@ abstract class AppLocalizations {
   /// **'Enter your phone number'**
   String get authPhoneTitle;
 
+  /// No description provided for @authPhoneSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll text you a one-time code to confirm it\'s you.'**
+  String get authPhoneSubtitle;
+
   /// No description provided for @authPhoneHint.
   ///
   /// In en, this message translates to:
   /// **'10-digit mobile number'**
   String get authPhoneHint;
+
+  /// No description provided for @authPhoneError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send the code. Try again.'**
+  String get authPhoneError;
+
+  /// No description provided for @authSendCodeCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code'**
+  String get authSendCodeCta;
 
   /// No description provided for @authOtpTitle.
   ///
@@ -146,11 +182,77 @@ abstract class AppLocalizations {
   /// **'Sent to {phone}'**
   String authOtpSubtitle(String phone);
 
+  /// No description provided for @authOtpCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'4-digit code'**
+  String get authOtpCodeLabel;
+
+  /// No description provided for @authOtpError.
+  ///
+  /// In en, this message translates to:
+  /// **'That code didn\'t work. Try again.'**
+  String get authOtpError;
+
+  /// No description provided for @authVerifyCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get authVerifyCta;
+
+  /// No description provided for @commonError.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong: {error}'**
+  String commonError(String error);
+
+  /// No description provided for @commonPortionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} portions'**
+  String commonPortionsLabel(int count);
+
+  /// No description provided for @commonPickupAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup address'**
+  String get commonPickupAddressLabel;
+
+  /// No description provided for @commonLocality.
+  ///
+  /// In en, this message translates to:
+  /// **'Locality'**
+  String get commonLocality;
+
+  /// No description provided for @timeLeftMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min left'**
+  String timeLeftMinutes(int minutes);
+
+  /// No description provided for @timeLeftHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} hr left'**
+  String timeLeftHours(int hours);
+
   /// No description provided for @donorDashboardTitle.
   ///
   /// In en, this message translates to:
   /// **'Your donations'**
   String get donorDashboardTitle;
+
+  /// No description provided for @donorDashboardEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing posted yet'**
+  String get donorDashboardEmptyTitle;
+
+  /// No description provided for @donorDashboardEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi {name} — post your first surplus batch and it goes live instantly.'**
+  String donorDashboardEmptyMessage(String name);
 
   /// No description provided for @donorCreateCta.
   ///
@@ -188,17 +290,143 @@ abstract class AppLocalizations {
   /// **'Review and post'**
   String get donorCreateStepReview;
 
+  /// No description provided for @donorCreateFoodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What is it?'**
+  String get donorCreateFoodLabel;
+
+  /// No description provided for @donorCreateFoodHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Vegetable biryani, 40 portions'**
+  String get donorCreateFoodHint;
+
+  /// No description provided for @donorCreateNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything an NGO should know? (optional)'**
+  String get donorCreateNotesLabel;
+
+  /// No description provided for @donorCreatePortionsMinusTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Fewer portions'**
+  String get donorCreatePortionsMinusTooltip;
+
+  /// No description provided for @donorCreatePortionsPlusTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'More portions'**
+  String get donorCreatePortionsPlusTooltip;
+
+  /// No description provided for @donorCreatePortionsUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'portions'**
+  String get donorCreatePortionsUnit;
+
+  /// No description provided for @donorCreateWindowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How long can an NGO safely collect this for?'**
+  String get donorCreateWindowSubtitle;
+
+  /// No description provided for @donorCreateWindowOption.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours, plural, one {1 hour} other {{hours} hours}}'**
+  String donorCreateWindowOption(num hours);
+
+  /// No description provided for @donorCreateAddressPrivacyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the locality is shown until an NGO is matched — the exact address is shared with them alone (§11).'**
+  String get donorCreateAddressPrivacyNote;
+
+  /// No description provided for @donorCreateLocalityHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Jubilee Hills, Hyderabad'**
+  String get donorCreateLocalityHint;
+
+  /// No description provided for @donorCreateReviewFoodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Food'**
+  String get donorCreateReviewFoodLabel;
+
+  /// No description provided for @donorCreateReviewPortionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Portions'**
+  String get donorCreateReviewPortionsLabel;
+
+  /// No description provided for @donorCreateReviewWindowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup window'**
+  String get donorCreateReviewWindowLabel;
+
+  /// No description provided for @donorCreateReviewLocalityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Locality'**
+  String get donorCreateReviewLocalityLabel;
+
+  /// No description provided for @donorCreateReviewWindowValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} hr from posting'**
+  String donorCreateReviewWindowValue(int hours);
+
+  /// No description provided for @donorCreateLiveAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'This goes live immediately and is visible to nearby NGOs.'**
+  String get donorCreateLiveAlert;
+
   /// No description provided for @donorLiveTitle.
   ///
   /// In en, this message translates to:
   /// **'Live — waiting for a match'**
   String get donorLiveTitle;
 
+  /// No description provided for @donorLiveAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Live — visible to nearby NGOs. We\'ll notify you the moment one requests it.'**
+  String get donorLiveAlert;
+
+  /// No description provided for @donorAllocatedAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'{ngoName} is on the way. Share this code at handover.'**
+  String donorAllocatedAlert(String ngoName);
+
   /// No description provided for @donorPickupCodeLabel.
   ///
   /// In en, this message translates to:
   /// **'Pickup code'**
   String get donorPickupCodeLabel;
+
+  /// No description provided for @donorPickupCodeCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for this code before handing over the food.'**
+  String get donorPickupCodeCaption;
+
+  /// No description provided for @donorCollectedByLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Collected by {ngoName}'**
+  String donorCollectedByLabel(String ngoName);
+
+  /// No description provided for @donorCancelCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel donation'**
+  String get donorCancelCta;
 
   /// No description provided for @receiverFeedTitle.
   ///
@@ -217,6 +445,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New donations nearby will show up here the moment they go live.'**
   String get receiverFeedEmptyBody;
+
+  /// No description provided for @receiverFromDonorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'From {donorName}'**
+  String receiverFromDonorLabel(String donorName);
 
   /// No description provided for @receiverRequestCta.
   ///
@@ -242,11 +476,323 @@ abstract class AppLocalizations {
   /// **'Confirm handover'**
   String get receiverEnterCodeTitle;
 
+  /// No description provided for @receiverEnterCodeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the donor for the 4-digit code shown on their screen.'**
+  String get receiverEnterCodeSubtitle;
+
+  /// No description provided for @receiverEnterCodeError.
+  ///
+  /// In en, this message translates to:
+  /// **'That code doesn\'t match. Check with the donor and try again.'**
+  String get receiverEnterCodeError;
+
+  /// No description provided for @receiverConfirmCollectedCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm collected'**
+  String get receiverConfirmCollectedCta;
+
   /// No description provided for @receiverCollectedTitle.
   ///
   /// In en, this message translates to:
   /// **'Collected'**
   String get receiverCollectedTitle;
+
+  /// No description provided for @receiverCollectedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Good food, kept moving. Thank you.'**
+  String get receiverCollectedMessage;
+
+  /// No description provided for @receiverBackToFeedCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to feed'**
+  String get receiverBackToFeedCta;
+
+  /// No description provided for @receiverRequestsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your requests'**
+  String get receiverRequestsTitle;
+
+  /// No description provided for @receiverRequestsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No active requests'**
+  String get receiverRequestsEmptyTitle;
+
+  /// No description provided for @receiverRequestsEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Request a donation from the feed and it will show up here once matched.'**
+  String get receiverRequestsEmptyMessage;
+
+  /// No description provided for @receiverBrowseCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse nearby surplus'**
+  String get receiverBrowseCta;
+
+  /// No description provided for @receiverRequestSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'From {donorName} · {count} portions'**
+  String receiverRequestSubtitle(String donorName, int count);
+
+  /// No description provided for @historyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get historyTitle;
+
+  /// No description provided for @donorHistoryEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet'**
+  String get donorHistoryEmptyTitle;
+
+  /// No description provided for @donorHistoryEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Donations move here once they\'re collected, cancelled or expired.'**
+  String get donorHistoryEmptyMessage;
+
+  /// No description provided for @receiverHistoryEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing collected yet'**
+  String get receiverHistoryEmptyTitle;
+
+  /// No description provided for @receiverHistoryEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Donations you\'ve collected will show up here.'**
+  String get receiverHistoryEmptyMessage;
+
+  /// No description provided for @historyDonorSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} portions · {day}/{month}'**
+  String historyDonorSubtitle(int count, int day, int month);
+
+  /// No description provided for @historyReceiverSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'From {donorName} · {day}/{month}'**
+  String historyReceiverSubtitle(String donorName, int day, int month);
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing yet'**
+  String get notificationsEmptyTitle;
+
+  /// No description provided for @notificationsEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll let you know the moment something needs your attention.'**
+  String get notificationsEmptyMessage;
+
+  /// No description provided for @notifTimeMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}m ago'**
+  String notifTimeMinutes(int minutes);
+
+  /// No description provided for @notifTimeHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h ago'**
+  String notifTimeHours(int hours);
+
+  /// No description provided for @notifTimeDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days}d ago'**
+  String notifTimeDays(int days);
+
+  /// No description provided for @profileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileTitle;
+
+  /// No description provided for @profileTagDonor.
+  ///
+  /// In en, this message translates to:
+  /// **'Donor'**
+  String get profileTagDonor;
+
+  /// No description provided for @profileTagVerifiedNgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified NGO'**
+  String get profileTagVerifiedNgo;
+
+  /// No description provided for @profileLanguageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get profileLanguageLabel;
+
+  /// No description provided for @profileLanguageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get profileLanguageEnglish;
+
+  /// No description provided for @profileHelpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Help & support'**
+  String get profileHelpLabel;
+
+  /// No description provided for @profileSignOutCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get profileSignOutCta;
+
+  /// No description provided for @recurringTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring donations'**
+  String get recurringTitle;
+
+  /// No description provided for @recurringEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No recurring donations yet'**
+  String get recurringEmptyTitle;
+
+  /// No description provided for @recurringEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up a template for food you give away on a regular schedule — we\'ll ask you to confirm or skip each day.'**
+  String get recurringEmptyMessage;
+
+  /// No description provided for @recurringSetupCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up a template'**
+  String get recurringSetupCta;
+
+  /// No description provided for @recurringPostedTodayTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Posted today'**
+  String get recurringPostedTodayTag;
+
+  /// No description provided for @recurringSkippedTodayTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped today'**
+  String get recurringSkippedTodayTag;
+
+  /// No description provided for @recurringCardSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} portions · {windowHours} hr window · {locality}'**
+  String recurringCardSubtitle(int count, int windowHours, String locality);
+
+  /// No description provided for @recurringSkipCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip today'**
+  String get recurringSkipCta;
+
+  /// No description provided for @recurringConfirmCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm today'**
+  String get recurringConfirmCta;
+
+  /// No description provided for @recurringSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New recurring template'**
+  String get recurringSheetTitle;
+
+  /// No description provided for @recurringFoodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What do you give away regularly?'**
+  String get recurringFoodLabel;
+
+  /// No description provided for @recurringFoodHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Leftover lunch buffet'**
+  String get recurringFoodHint;
+
+  /// No description provided for @recurringPortionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Portions'**
+  String get recurringPortionsLabel;
+
+  /// No description provided for @recurringWindowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Window'**
+  String get recurringWindowLabel;
+
+  /// No description provided for @recurringHoursShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} hr'**
+  String recurringHoursShort(int hours);
+
+  /// No description provided for @recurringSaveCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Save template'**
+  String get recurringSaveCta;
+
+  /// No description provided for @navHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get navHome;
+
+  /// No description provided for @navRecurring.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring'**
+  String get navRecurring;
+
+  /// No description provided for @navHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get navHistory;
+
+  /// No description provided for @navAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts'**
+  String get navAlerts;
+
+  /// No description provided for @navProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get navProfile;
+
+  /// No description provided for @navRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests'**
+  String get navRequests;
 
   /// No description provided for @statusDraft.
   ///

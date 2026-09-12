@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
+import '../../../../core/l10n/app_localizations.dart';
 import '../../../../shared/utils/status_mapper.dart';
 import '../../../../shared/widgets/role_scaffold.dart';
 import '../../../../shared/widgets/role_tabs.dart';
@@ -16,15 +17,16 @@ class MyRequestsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final donationsAsync = ref.watch(receiverDonationsProvider);
 
     return RoleScaffold(
       currentIndex: 1,
-      tabs: receiverTabs,
-      appBarTitle: 'Your requests',
+      tabs: receiverTabs(l10n),
+      appBarTitle: l10n.receiverRequestsTitle,
       body: donationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Something went wrong: $err')),
+        error: (err, _) => Center(child: Text(l10n.commonError('$err'))),
         data: (allDonations) {
           final active = allDonations
               .where((d) => d.status == DonationStatus.allocated || d.status == DonationStatus.reallocated)
@@ -32,10 +34,10 @@ class MyRequestsScreen extends ConsumerWidget {
           if (active.isEmpty) {
             return Center(
               child: SsEmptyState(
-                title: 'No active requests',
-                message: 'Request a donation from the feed and it will show up here once matched.',
+                title: l10n.receiverRequestsEmptyTitle,
+                message: l10n.receiverRequestsEmptyMessage,
                 illustration: SsIllustrations.noRequestsYet,
-                primaryActionLabel: 'Browse nearby surplus',
+                primaryActionLabel: l10n.receiverBrowseCta,
                 onPrimaryAction: () => context.goNamed('receiverFeed'),
               ),
             );
@@ -48,8 +50,12 @@ class MyRequestsScreen extends ConsumerWidget {
               final d = active[i];
               return SsListTile(
                 title: d.title,
-                subtitle: 'From ${d.donorName} · ${d.portions} portions',
-                trailing: SsStatusBadge(status: d.status.ssStatus, dense: true),
+                subtitle: l10n.receiverRequestSubtitle(d.donorName, d.portions),
+                trailing: SsStatusBadge(
+                  status: d.status.ssStatus,
+                  label: d.status.label(l10n),
+                  dense: true,
+                ),
                 onTap: () => context.pushNamed(
                   'receiverDonationDetail',
                   pathParameters: {'id': d.id},

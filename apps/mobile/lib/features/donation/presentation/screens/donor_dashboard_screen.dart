@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
+import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
 import '../../../../shared/utils/status_mapper.dart';
 import '../../../../shared/widgets/role_scaffold.dart';
@@ -16,22 +17,23 @@ class DonorDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.ssColors;
+    final l10n = AppLocalizations.of(context)!;
     final session = ref.watch(sessionProvider);
     final donationsAsync = ref.watch(donorDonationsProvider);
 
     return RoleScaffold(
       currentIndex: 0,
-      tabs: donorTabs,
-      appBarTitle: 'Your donations',
+      tabs: donorTabs(l10n),
+      appBarTitle: l10n.donorDashboardTitle,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.pushNamed('donorCreate'),
         icon: SsIcon(SsIcons.addFood, color: c.onPrimary),
-        label: Text('Post surplus food', style: TextStyle(color: c.onPrimary)),
+        label: Text(l10n.donorCreateCta, style: TextStyle(color: c.onPrimary)),
         backgroundColor: c.primary,
       ),
       body: donationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Something went wrong: $err')),
+        error: (err, _) => Center(child: Text(l10n.commonError('$err'))),
         data: (allDonations) {
           // Terminal donations (collected, cancelled, ...) live in History —
           // this tab is "what's still in flight".
@@ -39,12 +41,12 @@ class DonorDashboardScreen extends ConsumerWidget {
           if (donations.isEmpty) {
             return Center(
               child: SsEmptyState(
-                title: 'Nothing posted yet',
+                title: l10n.donorDashboardEmptyTitle,
                 message: session == null
                     ? ''
-                    : 'Hi ${session.name.split(' ').first} — post your first surplus batch and it goes live instantly.',
+                    : l10n.donorDashboardEmptyMessage(session.name.split(' ').first),
                 illustration: SsIllustrations.nothingHereYet,
-                primaryActionLabel: 'Post surplus food',
+                primaryActionLabel: l10n.donorCreateCta,
                 onPrimaryAction: () => context.pushNamed('donorCreate'),
               ),
             );
@@ -69,6 +71,7 @@ class _DonationRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.ssColors;
+    final l10n = AppLocalizations.of(context)!;
     return Material(
       color: c.surface,
       borderRadius: BorderRadius.circular(SsRadius.lg),
@@ -92,12 +95,12 @@ class _DonationRow extends StatelessWidget {
                   children: [
                     Text(donation.title, style: SsTypeScale.h4.copyWith(color: c.onSurface)),
                     const SizedBox(height: 4),
-                    Text('${donation.portions} portions',
+                    Text(l10n.commonPortionsLabel(donation.portions),
                         style: SsTypeScale.small.copyWith(color: c.onSurfaceVariant)),
                   ],
                 ),
               ),
-              SsStatusBadge(status: donation.status.ssStatus),
+              SsStatusBadge(status: donation.status.ssStatus, label: donation.status.label(l10n)),
             ],
           ),
         ),

@@ -18,6 +18,7 @@ class SsDonationCard extends StatelessWidget {
     required this.donorName,
     required this.imageUrl,
     required this.status,
+    this.statusLabel,
     this.distanceLabel,
     this.timeLeftLabel,
     this.servingsLabel,
@@ -36,6 +37,10 @@ class SsDonationCard extends StatelessWidget {
   /// Null renders the illustrated placeholder rather than a broken frame.
   final String? imageUrl;
   final SsStatus status;
+
+  /// Localised status text. Falls back to the English label baked into the
+  /// token, same contract as `SsStatusBadge.label`.
+  final String? statusLabel;
 
   final String? distanceLabel;
   final String? timeLeftLabel;
@@ -62,7 +67,7 @@ class SsDonationCard extends StatelessWidget {
         if (distanceLabel != null) distanceLabel,
         if (timeLeftLabel != null) timeLeftLabel,
         if (servingsLabel != null) servingsLabel,
-        'Status: ${status.labelEn}',
+        'Status: ${statusLabel ?? status.labelEn}',
       ].whereType<String>().join(', '),
       child: ExcludeSemantics(
         child: Material(
@@ -82,6 +87,7 @@ class SsDonationCard extends StatelessWidget {
                   _Media(
                     imageUrl: imageUrl,
                     status: status,
+                    statusLabel: statusLabel,
                     isSaved: isSaved,
                     onToggleSave: onToggleSave,
                   ),
@@ -175,12 +181,14 @@ class _Media extends StatelessWidget {
   const _Media({
     required this.imageUrl,
     required this.status,
+    this.statusLabel,
     required this.isSaved,
     required this.onToggleSave,
   });
 
   final String? imageUrl;
   final SsStatus status;
+  final String? statusLabel;
   final bool isSaved;
   final VoidCallback? onToggleSave;
 
@@ -207,7 +215,7 @@ class _Media extends StatelessWidget {
           Positioned(
             top: SsSpacing.md,
             left: SsSpacing.md,
-            child: SsStatusBadge(status: status, dense: true),
+            child: SsStatusBadge(status: status, label: statusLabel, dense: true),
           ),
           if (onToggleSave != null)
             Positioned(

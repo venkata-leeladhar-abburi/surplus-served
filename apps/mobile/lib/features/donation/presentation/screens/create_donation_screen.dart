@@ -3,16 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
+import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
 import '../../domain/donation.dart';
 
-const _steps = [
-  "What's ready to go?",
-  'How many portions?',
-  'Pickup window',
-  'Pickup address',
-  'Review and post',
-];
+List<String> _steps(AppLocalizations l10n) => [
+      l10n.donorCreateStepDetails,
+      l10n.donorCreateStepPortions,
+      l10n.donorCreateStepWindow,
+      l10n.donorCreateStepAddress,
+      l10n.donorCreateStepReview,
+    ];
 
 class CreateDonationScreen extends ConsumerStatefulWidget {
   const CreateDonationScreen({super.key});
@@ -62,6 +63,8 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.ssColors;
+    final l10n = AppLocalizations.of(context)!;
+    final steps = _steps(l10n);
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(
@@ -83,17 +86,17 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SsStepper(steps: _steps, currentIndex: _step),
+            SsStepper(steps: steps, currentIndex: _step),
             const SizedBox(height: SsSpacing.xl),
-            Expanded(child: _buildStep(c)),
+            Expanded(child: _buildStep(c, l10n, steps)),
             const SizedBox(height: SsSpacing.lg),
             SsButton.primary(
-              label: _step == _steps.length - 1 ? 'Post surplus food' : 'Next',
+              label: _step == steps.length - 1 ? l10n.donorCreateCta : l10n.commonNext,
               expand: true,
               isLoading: _posting,
               onPressed: _canAdvance && !_posting
                   ? () {
-                      if (_step == _steps.length - 1) {
+                      if (_step == steps.length - 1) {
                         _post();
                       } else {
                         setState(() => _step += 1);
@@ -107,25 +110,25 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
     );
   }
 
-  Widget _buildStep(SsColors c) {
+  Widget _buildStep(SsColors c, AppLocalizations l10n, List<String> steps) {
     switch (_step) {
       case 0:
         return SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(_steps[0], style: SsTypeScale.h3.copyWith(color: c.onSurface)),
+              Text(steps[0], style: SsTypeScale.h3.copyWith(color: c.onSurface)),
               const SizedBox(height: SsSpacing.lg),
               SsTextField(
-                label: 'What is it?',
-                hint: 'e.g. Vegetable biryani, 40 portions',
+                label: l10n.donorCreateFoodLabel,
+                hint: l10n.donorCreateFoodHint,
                 controller: _titleController,
                 autofocus: true,
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: SsSpacing.md),
               SsTextField(
-                label: 'Anything an NGO should know? (optional)',
+                label: l10n.donorCreateNotesLabel,
                 controller: _descriptionController,
                 maxLines: 3,
               ),
@@ -136,14 +139,14 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(_steps[1], style: SsTypeScale.h3.copyWith(color: c.onSurface)),
+            Text(steps[1], style: SsTypeScale.h3.copyWith(color: c.onSurface)),
             const SizedBox(height: SsSpacing.xl),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SsIconButton(
                   icon: SsIcons.minus,
-                  tooltip: 'Fewer portions',
+                  tooltip: l10n.donorCreatePortionsMinusTooltip,
                   onPressed: _portions > 1 ? () => setState(() => _portions -= 5) : null,
                 ),
                 Padding(
@@ -152,14 +155,15 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
                 ),
                 SsIconButton(
                   icon: SsIcons.plus,
-                  tooltip: 'More portions',
+                  tooltip: l10n.donorCreatePortionsPlusTooltip,
                   onPressed: () => setState(() => _portions += 5),
                 ),
               ],
             ),
             const SizedBox(height: SsSpacing.sm),
             Center(
-              child: Text('portions', style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant)),
+              child: Text(l10n.donorCreatePortionsUnit,
+                  style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant)),
             ),
           ],
         );
@@ -167,10 +171,10 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(_steps[2], style: SsTypeScale.h3.copyWith(color: c.onSurface)),
+            Text(steps[2], style: SsTypeScale.h3.copyWith(color: c.onSurface)),
             const SizedBox(height: SsSpacing.sm),
             Text(
-              'How long can an NGO safely collect this for?',
+              l10n.donorCreateWindowSubtitle,
               style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
             ),
             const SizedBox(height: SsSpacing.lg),
@@ -178,7 +182,7 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: SsSpacing.sm),
                 child: _WindowOption(
-                  label: '$hours hour${hours == 1 ? '' : 's'}',
+                  label: l10n.donorCreateWindowOption(hours),
                   selected: _window.inHours == hours,
                   onTap: () => setState(() => _window = Duration(hours: hours)),
                 ),
@@ -190,17 +194,16 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(_steps[3], style: SsTypeScale.h3.copyWith(color: c.onSurface)),
+              Text(steps[3], style: SsTypeScale.h3.copyWith(color: c.onSurface)),
               const SizedBox(height: SsSpacing.sm),
               Text(
-                'Only the locality is shown until an NGO is matched — the exact '
-                'address is shared with them alone (§11).',
+                l10n.donorCreateAddressPrivacyNote,
                 style: SsTypeScale.small.copyWith(color: c.onSurfaceVariant),
               ),
               const SizedBox(height: SsSpacing.lg),
               SsTextField(
-                label: 'Locality',
-                hint: 'e.g. Jubilee Hills, Hyderabad',
+                label: l10n.commonLocality,
+                hint: l10n.donorCreateLocalityHint,
                 controller: _localityController,
                 prefixIcon: SsIcons.location,
                 autofocus: true,
@@ -214,15 +217,18 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(_steps[4], style: SsTypeScale.h3.copyWith(color: c.onSurface)),
+              Text(steps[4], style: SsTypeScale.h3.copyWith(color: c.onSurface)),
               const SizedBox(height: SsSpacing.lg),
-              _ReviewRow(label: 'Food', value: _titleController.text),
-              _ReviewRow(label: 'Portions', value: '$_portions'),
-              _ReviewRow(label: 'Pickup window', value: '${_window.inHours} hr from posting'),
-              _ReviewRow(label: 'Locality', value: _localityController.text),
+              _ReviewRow(label: l10n.donorCreateReviewFoodLabel, value: _titleController.text),
+              _ReviewRow(label: l10n.donorCreateReviewPortionsLabel, value: '$_portions'),
+              _ReviewRow(
+                label: l10n.donorCreateReviewWindowLabel,
+                value: l10n.donorCreateReviewWindowValue(_window.inHours),
+              ),
+              _ReviewRow(label: l10n.donorCreateReviewLocalityLabel, value: _localityController.text),
               const SizedBox(height: SsSpacing.lg),
               SsAlert(
-                message: 'This goes live immediately and is visible to nearby NGOs.',
+                message: l10n.donorCreateLiveAlert,
               ),
             ],
           ),

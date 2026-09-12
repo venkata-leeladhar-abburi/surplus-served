@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
+import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
 import '../../../../shared/widgets/role_scaffold.dart';
 import '../../../../shared/widgets/role_tabs.dart';
@@ -13,13 +14,14 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.ssColors;
+    final l10n = AppLocalizations.of(context)!;
     final session = ref.watch(sessionProvider);
     final isDonor = session?.role == UserRole.donor;
 
     return RoleScaffold(
       currentIndex: 4,
-      tabs: isDonor ? donorTabs : receiverTabs,
-      appBarTitle: 'Profile',
+      tabs: isDonor ? donorTabs(l10n) : receiverTabs(l10n),
+      appBarTitle: l10n.profileTitle,
       body: Padding(
         padding: const EdgeInsets.all(SsSpacing.xl),
         child: Column(
@@ -41,24 +43,24 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ),
                 if (isDonor)
-                  SsTag(label: 'Donor', icon: SsIcons.donate, tone: SsTagTone.positive)
+                  SsTag(label: l10n.profileTagDonor, icon: SsIcons.donate, tone: SsTagTone.positive)
                 else
-                  SsTag(label: 'Verified NGO', icon: SsIcons.verified, tone: SsTagTone.info),
+                  SsTag(label: l10n.profileTagVerifiedNgo, icon: SsIcons.verified, tone: SsTagTone.info),
               ],
             ),
             const SizedBox(height: SsSpacing.xxl),
             SsListTile(
-              title: 'Language',
-              subtitle: 'English',
+              title: l10n.profileLanguageLabel,
+              subtitle: l10n.profileLanguageEnglish,
               leading: SsIcon(SsIcons.settings, color: c.onSurfaceVariant),
             ),
             SsListTile(
-              title: 'Help & support',
+              title: l10n.profileHelpLabel,
               leading: SsIcon(SsIcons.help, color: c.onSurfaceVariant),
             ),
             const SizedBox(height: SsSpacing.xxl),
             SsButton.danger(
-              label: 'Sign out',
+              label: l10n.profileSignOutCta,
               expand: true,
               icon: SsIcons.logout,
               onPressed: () => ref.read(sessionProvider.notifier).signOut(),
