@@ -83,10 +83,7 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SsStepper(steps: _steps, currentIndex: _step),
-            ),
+            SsStepper(steps: _steps, currentIndex: _step),
             const SizedBox(height: SsSpacing.xl),
             Expanded(child: _buildStep(c)),
             const SizedBox(height: SsSpacing.lg),
