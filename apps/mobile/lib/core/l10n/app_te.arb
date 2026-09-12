@@ -1,0 +1,48 @@
+{
+  "@@locale": "te",
+  "appTitle": "మిగులు → వడ్డించబడింది",
+  "roleSelectTitle": "మీరు Surplus → Served ని ఎలా ఉపయోగిస్తారు?",
+  "roleDonor": "నా వద్ద ఆహారం ఉంది",
+  "roleReceiver": "నేను ధృవీకరించిన NGO నడుపుతున్నాను",
+
+  "authPhoneTitle": "మీ ఫోన్ నంబర్ నమోదు చేయండి",
+  "authPhoneHint": "10-అంకెల మొబైల్ నంబర్",
+  "authOtpTitle": "మేము పంపిన కోడ్‌ను నమోదు చేయండి",
+  "authOtpSubtitle": "{phone}కి పంపబడింది",
+
+  "donorDashboardTitle": "మీ విరాళాలు",
+  "donorCreateCta": "మిగులు ఆహారాన్ని పోస్ట్ చేయండి",
+  "donorCreateStepDetails": "ఏది సిద్ధంగా ఉంది?",
+  "donorCreateStepPortions": "ఎన్ని వంతులు?",
+  "donorCreateStepWindow": "పికప్ సమయం",
+  "donorCreateStepAddress": "పికప్ చిరునామా",
+  "donorCreateStepReview": "సమీక్షించి పోస్ట్ చేయండి",
+  "donorLiveTitle": "లైవ్ — సరిపోలిక కోసం వేచి ఉంది",
+  "donorPickupCodeLabel": "పికప్ కోడ్",
+
+  "receiverFeedTitle": "సమీపంలోని మిగులు",
+  "receiverFeedEmptyTitle": "ఇక్కడ ఇంకా ఏమీ లేదు",
+  "receiverFeedEmptyBody": "సమీపంలోని కొత్త విరాళాలు లైవ్ అయిన వెంటనే ఇక్కడ కనిపిస్తాయి.",
+  "receiverRequestCta": "దీన్ని అభ్యర్థించండి",
+  "receiverAllocatedTitle": "మీకు కేటాయించబడింది",
+  "receiverEnterCodeCta": "పికప్ కోడ్ నమోదు చేయండి",
+  "receiverEnterCodeTitle": "అప్పగింతను నిర్ధారించండి",
+  "receiverCollectedTitle": "సేకరించబడింది",
+
+  "statusDraft": "డ్రాఫ్ట్",
+  "statusPendingCheck": "సమీక్షలో ఉంది",
+  "statusLive": "లైవ్",
+  "statusAllocated": "కేటాయించబడింది",
+  "statusCollected": "సేకరించబడింది",
+  "statusReallocated": "తిరిగి కేటాయించబడింది",
+  "statusUnfulfilled": "నెరవేరలేదు",
+  "statusCancelled": "రద్దు చేయబడింది",
+  "statusRejected": "తిరస్కరించబడింది",
+
+  "commonCancel": "రద్దు చేయండి",
+  "commonBack": "వెనుకకు",
+  "commonNext": "తదుపరి",
+  "commonSubmit": "సమర్పించండి",
+  "commonRetry": "మళ్లీ ప్రయత్నించండి",
+  "minutesShort": "{minutes} నిమి"
+}

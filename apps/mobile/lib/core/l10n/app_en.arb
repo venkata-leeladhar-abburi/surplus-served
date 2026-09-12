@@ -1,0 +1,52 @@
+{
+  "@@locale": "en",
+  "appTitle": "Surplus → Served",
+  "@appTitle": {"description": "App title, shown on splash and in the OS task switcher"},
+
+  "roleSelectTitle": "How will you use Surplus → Served?",
+  "roleDonor": "I have food to give",
+  "roleReceiver": "I run a verified NGO",
+
+  "authPhoneTitle": "Enter your phone number",
+  "authPhoneHint": "10-digit mobile number",
+  "authOtpTitle": "Enter the code we sent",
+  "authOtpSubtitle": "Sent to {phone}",
+  "@authOtpSubtitle": {"placeholders": {"phone": {"type": "String"}}},
+
+  "donorDashboardTitle": "Your donations",
+  "donorCreateCta": "Post surplus food",
+  "donorCreateStepDetails": "What's ready to go?",
+  "donorCreateStepPortions": "How many portions?",
+  "donorCreateStepWindow": "Pickup window",
+  "donorCreateStepAddress": "Pickup address",
+  "donorCreateStepReview": "Review and post",
+  "donorLiveTitle": "Live — waiting for a match",
+  "donorPickupCodeLabel": "Pickup code",
+
+  "receiverFeedTitle": "Nearby surplus",
+  "receiverFeedEmptyTitle": "Nothing here yet",
+  "receiverFeedEmptyBody": "New donations nearby will show up here the moment they go live.",
+  "receiverRequestCta": "Request this",
+  "receiverAllocatedTitle": "Allocated to you",
+  "receiverEnterCodeCta": "Enter pickup code",
+  "receiverEnterCodeTitle": "Confirm handover",
+  "receiverCollectedTitle": "Collected",
+
+  "statusDraft": "Draft",
+  "statusPendingCheck": "Under review",
+  "statusLive": "Live",
+  "statusAllocated": "Allocated",
+  "statusCollected": "Collected",
+  "statusReallocated": "Reallocated",
+  "statusUnfulfilled": "Unfulfilled",
+  "statusCancelled": "Cancelled",
+  "statusRejected": "Rejected",
+
+  "commonCancel": "Cancel",
+  "commonBack": "Back",
+  "commonNext": "Next",
+  "commonSubmit": "Submit",
+  "commonRetry": "Try again",
+  "minutesShort": "{minutes} min",
+  "@minutesShort": {"placeholders": {"minutes": {"type": "int"}}}
+}
