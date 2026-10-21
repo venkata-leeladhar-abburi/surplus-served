@@ -63,7 +63,6 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                     label: 'Email Address',
                     controller: _controller,
                     keyboardType: TextInputType.emailAddress,
-                    prefixIcon: Icons.email,
                     errorText: _hasError ? 'Please enter a valid email' : null,
                     autofocus: true,
                     onChanged: (_) => setState(() => _hasError = false),
