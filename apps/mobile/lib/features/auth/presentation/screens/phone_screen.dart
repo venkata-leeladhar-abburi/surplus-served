@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
-import '../../../../core/providers.dart';
 import '../../../../shared/widgets/connectivity_banner.dart';
 import '../../domain/user_role.dart';
 import 'otp_screen.dart';
@@ -20,34 +19,24 @@ class PhoneScreen extends ConsumerStatefulWidget {
 
 class _PhoneScreenState extends ConsumerState<PhoneScreen> {
   final _controller = TextEditingController();
-  bool _sending = false;
   bool _hasError = false;
 
-  bool get _isValid => RegExp(r'^\d{10}$').hasMatch(_controller.text);
+  bool get _isValid => _controller.text.contains('@') && _controller.text.contains('.');
 
-  Future<void> _sendOtp() async {
-    setState(() {
-      _sending = true;
-      _hasError = false;
-    });
-    try {
-      await ref.read(authRepositoryProvider).sendOtp(_controller.text);
-      if (!mounted) return;
-      context.pushNamed(
-        'otp',
-        extra: OtpScreenArgs(phone: _controller.text, role: widget.role),
-      );
-    } catch (_) {
-      if (mounted) setState(() => _hasError = true);
-    } finally {
-      if (mounted) setState(() => _sending = false);
+  void _proceedToPassword() {
+    if (!_isValid) {
+      setState(() => _hasError = true);
+      return;
     }
+    context.pushNamed(
+      'otp',
+      extra: OtpScreenArgs(phone: _controller.text.trim(), role: widget.role),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final c = context.ssColors;
-    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(backgroundColor: c.background, elevation: 0),
@@ -61,30 +50,29 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    l10n.authPhoneTitle,
+                    'Enter your Email',
                     style: SsTypeScale.h3.copyWith(color: c.onSurface),
                   ),
                   const SizedBox(height: SsSpacing.sm),
                   Text(
-                    l10n.authPhoneSubtitle,
+                    'We will use this email for your account login.',
                     style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
                   ),
                   const SizedBox(height: SsSpacing.xl),
                   SsTextField(
-                    label: l10n.authPhoneHint,
+                    label: 'Email Address',
                     controller: _controller,
-                    keyboardType: TextInputType.phone,
-                    prefixIcon: SsIcons.phone,
-                    errorText: _hasError ? l10n.authPhoneError : null,
+                    keyboardType: TextInputType.emailAddress,
+                    prefixIcon: SsIcons.email,
+                    errorText: _hasError ? 'Please enter a valid email' : null,
                     autofocus: true,
-                    onChanged: (_) => setState(() {}),
+                    onChanged: (_) => setState(() => _hasError = false),
                   ),
                   const SizedBox(height: SsSpacing.xl),
                   SsButton.primary(
-                    label: l10n.authSendCodeCta,
+                    label: 'Continue',
                     expand: true,
-                    isLoading: _sending,
-                    onPressed: _isValid && !_sending ? _sendOtp : null,
+                    onPressed: _isValid ? _proceedToPassword : null,
                   ),
                 ],
               ),
