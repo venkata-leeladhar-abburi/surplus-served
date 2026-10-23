@@ -12,8 +12,15 @@ class HttpDonationRepository implements DonationRepository {
   static const String _baseUrl = 'https://surplus-served-backend.onrender.com/api/donations';
 
   @override
-  Stream<List<Donation>> watchDonorDonations(String donorId) async* {
-    final response = await _client.get(Uri.parse('$_baseUrl?donorId=$donorId'));
+  Stream<List<Donation>> watchDonorDonations(String donorId, {String? authToken}) async* {
+    final response = await _client.get(
+      Uri.parse('$_baseUrl?donorId=$donorId'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (authToken != null) 'Authorization': 'Bearer $authToken',
+      },
+    );
+    
     if (response.statusCode == 200) {
       final List<dynamic> jsonList = jsonDecode(response.body);
       final donations = jsonList.map((json) => _fromJson(json)).toList();
@@ -25,8 +32,14 @@ class HttpDonationRepository implements DonationRepository {
   }
 
   @override
-  Future<Donation> getById(String id) async {
-    final response = await _client.get(Uri.parse('$_baseUrl/$id'));
+  Future<Donation> getById(String id, {String? authToken}) async {
+    final response = await _client.get(
+      Uri.parse('$_baseUrl/$id'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (authToken != null) 'Authorization': 'Bearer $authToken',
+      },
+    );
     if (response.statusCode == 200) {
       return _fromJson(jsonDecode(response.body));
     } else {
@@ -44,10 +57,14 @@ class HttpDonationRepository implements DonationRepository {
     required DateTime pickupWindowStart,
     required DateTime pickupWindowEnd,
     required PickupAddress address,
+    String? authToken,
   }) async {
     final response = await _client.post(
       Uri.parse(_baseUrl),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        if (authToken != null) 'Authorization': 'Bearer $authToken',
+      },
       body: jsonEncode({
         'donorId': donorId,
         'donorName': donorName,
@@ -68,10 +85,13 @@ class HttpDonationRepository implements DonationRepository {
   }
 
   @override
-  Future<void> cancel(String id) async {
+  Future<void> cancel(String id, {String? authToken}) async {
     final response = await _client.patch(
       Uri.parse('$_baseUrl/$id/cancel'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        if (authToken != null) 'Authorization': 'Bearer $authToken',
+      },
     );
 
     if (response.statusCode != 200) {
