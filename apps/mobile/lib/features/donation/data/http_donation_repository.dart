@@ -5,98 +5,112 @@ import '../domain/donation.dart';
 import '../domain/donation_status.dart';
 import '../domain/donation_repository.dart';
 
-/// A pickup address as it should be *serialised*, not as it is stored.
-///
-/// §11 (address privacy): while a donation is `live`, only [locality] is
-/// visible to receivers browsing the feed. [exactLine] and [contactPhone]
-/// are populated only once an NGO holds the allocation for this donation —
-/// enforced by the repository/serializer, never trusted to a screen.
-class PickupAddress {
-  const PickupAddress({
-    required this.locality,
-    this.exactLine,
-    this.contactName,
-    this.contactPhone,
-    this.latitude,
-    this.longitude,
-  });
+class HttpDonationRepository implements DonationRepository {
+  HttpDonationRepository({http.Client? client}) : _client = client ?? http.Client();
 
-  final String locality;
-  final String? exactLine;
-  final String? contactName;
-  final String? contactPhone;
-  final double? latitude;
-  final double? longitude;
+  final http.Client _client;
+  static const String _baseUrl = 'https://surplus-served-backend.onrender.com/api/donations';
 
-  bool get hasExactDetails => exactLine != null;
-}
-
-class Donation {
-  const Donation({
-    required this.id,
-    required this.donorId,
-    required this.donorName,
-    required this.title,
-    required this.portions,
-    required this.status,
-    required this.pickupWindowStart,
-    required this.pickupWindowEnd,
-    required this.address,
-    required this.createdAt,
-    this.description,
-    this.allocatedToNgoId,
-    this.allocatedToNgoName,
-    this.pickupCode,
-  });
-
-  final String id;
-  final String donorId;
-  final String donorName;
-  final String title;
-  final String? description;
-  final int portions;
-  final DonationStatus status;
-  final DateTime pickupWindowStart;
-  final DateTime pickupWindowEnd;
-  final PickupAddress address;
-  final DateTime createdAt;
-
-  final String? allocatedToNgoId;
-  final String? allocatedToNgoName;
-
-  /// §12's 4-digit handover proof. Set once allocated, cleared once
-  /// collected — the entire proof mechanism for v1, no photo or GPS trail.
-  final String? pickupCode;
-
-  /// Minutes remaining in the pickup window, floored at zero. Feeds
-  /// `SsFreshnessRing` — green → orange → red as this shrinks.
-  int minutesRemaining(DateTime now) {
-    final remaining = pickupWindowEnd.difference(now).inMinutes;
-    return remaining < 0 ? 0 : remaining;
+  @override
+  Stream<List<Donation>> watchDonorDonations(String donorId) async* {
+    final response = await _client.get(Uri.parse('$_baseUrl?donorId=$donorId'));
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonList = jsonDecode(response.body);
+      final donations = jsonList.map((json) => _fromJson(json)).toList();
+      donations.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      yield donations;
+    } else {
+      throw Exception('Failed to load donor donations from server');
+    }
   }
 
-  Donation copyWith({
-    DonationStatus? status,
-    String? allocatedToNgoId,
-    String? allocatedToNgoName,
-    String? pickupCode,
-    PickupAddress? address,
-  }) {
+  @override
+  Future<Donation> getById(String id) async {
+    final response = await _client.get(Uri.parse('$_baseUrl/$id'));
+    if (response.statusCode == 200) {
+      return _fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to fetch donation details');
+    }
+  }
+
+  @override
+  Future<Donation> create({
+    required String donorId,
+    required String donorName,
+    required String title,
+    String? description,
+    required int portions,
+    required DateTime pickupWindowStart,
+    required DateTime pickupWindowEnd,
+    required PickupAddress address,
+  }) async {
+    final response = await _client.post(
+      Uri.parse(_baseUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'donorId': donorId,
+        'donorName': donorName,
+        'title': title,
+        'description': description,
+        'portions': portions,
+        'pickupWindowStart': pickupWindowStart.toIso8601String(),
+        'pickupWindowEnd': pickupWindowEnd.toIso8601String(),
+        'address': {'locality': address.locality},
+      }),
+    );
+
+    if (response.statusCode == 201) {
+      return _fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to create donation');
+    }
+  }
+
+  @override
+  Future<void> cancel(String id) async {
+    final response = await _client.patch(
+      Uri.parse('$_baseUrl/$id/cancel'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to cancel donation');
+    }
+  }
+
+  Donation _fromJson(Map<String, dynamic> json) {
     return Donation(
-      id: id,
-      donorId: donorId,
-      donorName: donorName,
-      title: title,
-      description: description,
-      portions: portions,
-      status: status ?? this.status,
-      pickupWindowStart: pickupWindowStart,
-      pickupWindowEnd: pickupWindowEnd,
-      address: address ?? this.address,
-      createdAt: createdAt,
-      allocatedToNgoId: allocatedToNgoId ?? this.allocatedToNgoId,
-      allocatedToNgoName: allocatedToNgoName ?? this.allocatedToNgoName,
-      pickupCode: pickupCode ?? this.pickupCode,
+      id: json['_id'] ?? json['id'] ?? '',
+      donorId: json['donorId'] ?? '',
+      donorName: json['donorName'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'],
+      portions: json['portions'] ?? 0,
+      status: DonationStatus.values.firstWhere(
+        (e) => e.name == (json['status'] ?? 'available'),
+        orElse: () => DonationStatus.available,
+      ),
+      pickupWindowStart: json['pickupWindowStart'] != null 
+          ? DateTime.parse(json['pickupWindowStart']) 
+          : DateTime.now(),
+      pickupWindowEnd: json['pickupWindowEnd'] != null 
+          ? DateTime.parse(json['pickupWindowEnd']) 
+          : DateTime.now().add(const Duration(hours: 2)),
+      address: PickupAddress(
+        locality: json['address']?['locality'] ?? '',
+        exactLine: json['address']?['exactLine'],
+        contactName: json['address']?['contactName'],
+        contactPhone: json['address']?['contactPhone'],
+        latitude: json['address']?['latitude']?.toDouble(),
+        longitude: json['address']?['longitude']?.toDouble(),
+      ),
+      createdAt: json['createdAt'] != null 
+          ? DateTime.parse(json['createdAt']) 
+          : DateTime.now(),
+      allocatedToNgoId: json['allocatedToNgoId'],
+      allocatedToNgoName: json['allocatedToNgoName'],
+      pickupCode: json['pickupCode'],
     );
   }
 }
