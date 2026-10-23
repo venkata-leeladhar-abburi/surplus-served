@@ -45,24 +45,44 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
   Future<void> _post() async {
     final session = ref.read(sessionProvider);
     if (session == null) return;
+    
     setState(() => _posting = true);
     final now = DateTime.now();
-    final donation = await ref
-        .read(donationRepositoryProvider)
-        .create(
-          donorId: session.userId,
-          donorName: session.name,
-          title: _titleController.text.trim(),
-          description: _descriptionController.text.trim().isEmpty
-              ? null
-              : _descriptionController.text.trim(),
-          portions: int.tryParse(_portionsController.text) ?? 1,
-          pickupWindowStart: now,
-          pickupWindowEnd: now.add(_window),
-          address: PickupAddress(locality: _localityController.text.trim()),
-        );
-    if (!mounted) return;
-    context.goNamed('donorDonationDetail', pathParameters: {'id': donation.id});
+
+    try {
+      final donation = await ref
+          .read(donationRepositoryProvider)
+          .create(
+            donorId: session.userId,
+            donorName: session.name,
+            title: _titleController.text.trim(),
+            description: _descriptionController.text.trim().isEmpty
+                ? null
+                : _descriptionController.text.trim(),
+            portions: int.tryParse(_portionsController.text) ?? 1,
+            pickupWindowStart: now,
+            pickupWindowEnd: now.add(_window),
+            address: PickupAddress(locality: _localityController.text.trim()),
+            authToken: session.token, // <-- FIX 1: Pass JWT token here!
+          );
+
+      if (!mounted) return;
+      context.goNamed('donorDonationDetail', pathParameters: {'id': donation.id});
+    } catch (e) {
+      if (!mounted) return;
+      
+      // FIX 2: Show clear SnackBar alert if the backend returns an error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to post donation: ${e.toString().replaceAll('Exception: ', '')}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _posting = false);
+      }
+    }
   }
 
   @override
