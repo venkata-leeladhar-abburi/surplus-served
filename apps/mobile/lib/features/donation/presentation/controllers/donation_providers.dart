@@ -1,10 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers.dart';
+import '../../data/http_donation_repository.dart';
 import '../../domain/donation.dart';
+import '../../domain/donation_repository.dart';
 
-/// The signed-in donor's own donations, newest first, live-updating as the
-/// fixture store (or eventually the socket) pushes state changes.
+/// Provides the HTTP-backed donation repository connected to your Render backend.
+final donationRepositoryProvider = Provider<DonationRepository>((ref) {
+  return HttpDonationRepository();
+});
+
+/// The signed-in donor's own donations, newest first, fetched from the backend.
 final donorDonationsProvider = StreamProvider<List<Donation>>((ref) {
   final session = ref.watch(sessionProvider);
   if (session == null) return const Stream.empty();
@@ -13,10 +19,9 @@ final donorDonationsProvider = StreamProvider<List<Donation>>((ref) {
       .watchDonorDonations(session.userId);
 });
 
-/// A single donation, tracked live — used by both the donor's own detail
-/// screen and the receiver's, so everyone watching a donation sees the same
-/// `live → allocated → collected` transition as it happens.
-final donationByIdProvider = StreamProvider.family<Donation, String>((ref, id) {
-  final store = ref.watch(fixtureStoreProvider);
-  return store.watchAll().map((all) => all.firstWhere((d) => d.id == id));
+/// A single donation tracked by its ID, fetched via the repository.
+final donationByIdProvider = StreamProvider.family<Donation, String>((ref, id) async* {
+  final repository = ref.watch(donationRepositoryProvider);
+  // Yield the current fetch result for this specific donation ID
+  yield await repository.getById(id);
 });
