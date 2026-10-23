@@ -100,6 +100,13 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                         ? _authenticate
                         : null,
                   ),
+                  if (_hasError && _errorMessage.toLowerCase().contains('exists')) ...[
+  const SizedBox(height: SsSpacing.md),
+  TextButton(
+    onPressed: () => context.pushNamed('login'),
+    child: const Text('Already have an account? Log In here'),
+  ),
+],
                 ],
               ),
             ),
