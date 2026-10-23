@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class AuthService {
   // Replace this with your live deployed backend URL once ready
-  static const String baseUrl = 'https://YOUR-BACKEND-URL.onrender.com/api/auth';
+  static const String baseUrl = 'https://surplus-served-backend.onrender.com';
 
   Future<Map<String, dynamic>> register({
     required String name,
