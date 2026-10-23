@@ -35,7 +35,7 @@ class HttpAuthRepository implements AuthRepository {
       return Session(
         userId: data['_id'] ?? '',
         name: data['name'] ?? name,
-        phone: '', // Stored as empty or can be added if needed
+        phone: '',
         role: role,
         token: data['token'],
       );
@@ -62,7 +62,6 @@ class HttpAuthRepository implements AuthRepository {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
 
-      // Parse role string back to UserRole enum safely
       final roleStr = data['role']?.toString().toLowerCase() ?? 'donor';
       final userRole = UserRole.values.firstWhere(
         (e) => e.name.toLowerCase() == roleStr,
