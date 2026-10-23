@@ -7,13 +7,22 @@ import '../../domain/donation.dart';
 final donorDonationsProvider = StreamProvider<List<Donation>>((ref) {
   final session = ref.watch(sessionProvider);
   if (session == null) return const Stream.empty();
+
   return ref
       .watch(donationRepositoryProvider)
-      .watchDonorDonations(session.userId);
+      .watchDonorDonations(
+        session.userId,
+        authToken: session.token, // Pass the active session token here
+      );
 });
 
 /// A single donation tracked by its ID, fetched via the repository.
 final donationByIdProvider = StreamProvider.family<Donation, String>((ref, id) async* {
+  final session = ref.watch(sessionProvider);
   final repository = ref.watch(donationRepositoryProvider);
-  yield await repository.getById(id);
+
+  yield await repository.getById(
+    id,
+    authToken: session?.token, // Pass authorization token if available
+  );
 });
