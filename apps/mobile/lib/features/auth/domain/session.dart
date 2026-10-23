@@ -6,7 +6,7 @@ class Session {
     required this.name,
     required this.phone,
     required this.role,
-    this.token,
+    this.token, // <-- Optional JWT auth token
   });
 
   final String userId;
