@@ -7,7 +7,7 @@ import '../../../../core/providers.dart';
 import '../../../../shared/widgets/connectivity_banner.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super me});
+  const LoginScreen({super.key});
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
