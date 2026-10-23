@@ -20,7 +20,7 @@ class HttpDonationRepository implements DonationRepository {
         if (authToken != null) 'Authorization': 'Bearer $authToken',
       },
     );
-    
+
     if (response.statusCode == 200) {
       final List<dynamic> jsonList = jsonDecode(response.body);
       final donations = jsonList.map((json) => _fromJson(json)).toList();
@@ -40,6 +40,7 @@ class HttpDonationRepository implements DonationRepository {
         if (authToken != null) 'Authorization': 'Bearer $authToken',
       },
     );
+
     if (response.statusCode == 200) {
       return _fromJson(jsonDecode(response.body));
     } else {
@@ -112,11 +113,11 @@ class HttpDonationRepository implements DonationRepository {
         (e) => e.name.toLowerCase() == statusStr,
         orElse: () => DonationStatus.values.first,
       ),
-      pickupWindowStart: json['pickupWindowStart'] != null 
-          ? DateTime.parse(json['pickupWindowStart']) 
+      pickupWindowStart: json['pickupWindowStart'] != null
+          ? DateTime.parse(json['pickupWindowStart'])
           : DateTime.now(),
-      pickupWindowEnd: json['pickupWindowEnd'] != null 
-          ? DateTime.parse(json['pickupWindowEnd']) 
+      pickupWindowEnd: json['pickupWindowEnd'] != null
+          ? DateTime.parse(json['pickupWindowEnd'])
           : DateTime.now().add(const Duration(hours: 2)),
       address: PickupAddress(
         locality: json['address']?['locality'] ?? '',
@@ -126,8 +127,8 @@ class HttpDonationRepository implements DonationRepository {
         latitude: json['address']?['latitude']?.toDouble(),
         longitude: json['address']?['longitude']?.toDouble(),
       ),
-      createdAt: json['createdAt'] != null 
-          ? DateTime.parse(json['createdAt']) 
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
       allocatedToNgoId: json['allocatedToNgoId'],
       allocatedToNgoName: json['allocatedToNgoName'],
