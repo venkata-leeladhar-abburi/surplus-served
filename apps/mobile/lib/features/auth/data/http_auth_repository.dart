@@ -12,51 +12,73 @@ class HttpAuthRepository implements AuthRepository {
   static const String _baseUrl = 'https://surplus-served-backend.onrender.com/api/auth';
 
   @override
-  Future<void> sendOtp(String phone) async {
-    // If using phone/OTP or request endpoint on your backend
+  Future<Session> register({
+    required String name,
+    required String email,
+    required String password,
+    required UserRole role,
+  }) async {
     final response = await _client.post(
-      Uri.parse('$_baseUrl/send-otp'),
+      Uri.parse('$_baseUrl/register'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'phone': phone}),
+      body: jsonEncode({
+        'name': name,
+        'email': email,
+        'password': password,
+        'role': role.name.toLowerCase(),
+      }),
     );
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to send OTP');
+    if (response.statusCode == 201) {
+      final data = jsonDecode(response.body);
+
+      return Session(
+        userId: data['_id'] ?? '',
+        name: data['name'] ?? name,
+        phone: '', // Stored as empty or can be added if needed
+        role: role,
+        token: data['token'],
+      );
+    } else {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(errorBody['message'] ?? 'Registration failed');
     }
   }
 
   @override
-  Future<Session> verifyOtp({
-    required String phone,
-    required String otp,
-    required UserRole role,
+  Future<Session> login({
+    required String email,
+    required String password,
   }) async {
     final response = await _client.post(
-      Uri.parse('$_baseUrl/verify-otp'), // Or /login /register route
+      Uri.parse('$_baseUrl/login'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'phone': phone,
-        'otp': otp,
-        'role': role.name,
+        'email': email,
+        'password': password,
       }),
     );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
+    if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
 
-      // Extract the real user _id, token, and name returned from backend
-      final user = data['user'];
-      final token = data['token'];
+      // Parse role string back to UserRole enum safely
+      final roleStr = data['role']?.toString().toLowerCase() ?? 'donor';
+      final userRole = UserRole.values.firstWhere(
+        (e) => e.name.toLowerCase() == roleStr,
+        orElse: () => UserRole.donor,
+      );
 
       return Session(
-        userId: user['_id'] ?? user['id'], // Real 24-character MongoDB ObjectId
-        name: user['name'] ?? 'User',
-        phone: user['phone'] ?? phone,
-        role: role,
-        token: token, // Real JWT token
+        userId: data['_id'] ?? '',
+        name: data['name'] ?? 'User',
+        phone: '',
+        role: userRole,
+        token: data['token'],
       );
     } else {
-      throw Exception('Authentication failed: ${response.body}');
+      final errorBody = jsonDecode(response.body);
+      throw Exception(errorBody['message'] ?? 'Login failed');
     }
   }
 }
