@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/allocation/data/allocation_repository_fixture.dart';
 import '../features/allocation/domain/allocation_repository.dart';
 import '../features/auth/data/auth_repository_fixture.dart';
+import '../features/auth/data/http_auth_repository.dart';
 import '../features/auth/domain/auth_repository.dart';
 import '../features/auth/domain/session.dart';
 import '../features/discovery/data/discovery_repository_fixture.dart';
@@ -33,7 +34,7 @@ final allocationRepositoryProvider = Provider<AllocationRepository>(
 );
 
 final authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => AuthRepositoryFixture(),
+  (ref) {return HttpAuthRepository();}
 );
 
 final recurringRepositoryProvider = Provider<RecurringRepository>(
