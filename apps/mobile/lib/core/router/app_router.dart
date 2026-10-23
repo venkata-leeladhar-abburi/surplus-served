@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/domain/user_role.dart';
 import '../../features/auth/presentation/screens/otp_screen.dart';
 import '../../features/auth/presentation/screens/phone_screen.dart';
+import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/role_select_screen.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/allocation/presentation/screens/enter_pickup_code_screen.dart';
