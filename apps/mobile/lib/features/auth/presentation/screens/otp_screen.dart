@@ -1,44 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
+import '../../../../core/providers.dart';
 import '../../../../shared/widgets/connectivity_banner.dart';
 import '../../domain/user_role.dart';
-import 'otp_screen.dart'; // We will use this to pass args to the password screen
 
-class PhoneScreen extends ConsumerStatefulWidget {
-  const PhoneScreen({super.key, required this.role});
-
+class OtpScreenArgs {
+  const OtpScreenArgs({
+    required this.name,
+    required this.email,
+    required this.role,
+  });
+  final String name;
+  final String email;
   final UserRole role;
-
-  @override
-  ConsumerState<PhoneScreen> createState() => _PhoneScreenState();
 }
 
-class _PhoneScreenState extends ConsumerState<PhoneScreen> {
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
+class OtpScreen extends ConsumerStatefulWidget {
+  const OtpScreen({super.key, required this.args});
+
+  final OtpScreenArgs args;
+
+  @override
+  ConsumerState<OtpScreen> createState() => _OtpScreenState();
+}
+
+class _OtpScreenState extends ConsumerState<OtpScreen> {
+  final _passwordController = TextEditingController();
+  bool _verifying = false;
   bool _hasError = false;
+  String _errorMessage = 'Invalid password or connection error';
 
-  bool get _isValid =>
-      _nameController.text.trim().isNotEmpty &&
-      _emailController.text.contains('@') &&
-      _emailController.text.contains('.');
-
-  void _proceedToPassword() {
-    if (!_isValid) {
-      setState(() => _hasError = true);
-      return;
+  Future<void> _authenticate() async {
+    setState(() {
+      _verifying = true;
+      _hasError = false;
+    });
+    try {
+      final session = await ref.read(authRepositoryProvider).register(
+            name: widget.args.name,
+            email: widget.args.email,
+            password: _passwordController.text.trim(),
+            role: widget.args.role,
+          );
+      
+      ref.read(sessionProvider.notifier).signIn(session);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _verifying = false);
     }
-    context.pushNamed(
-      'otp', // Routes to password screen
-      extra: OtpScreenArgs(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        role: widget.role,
-      ),
-    );
   }
 
   @override
@@ -47,55 +64,47 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(backgroundColor: c.background, elevation: 0),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const ConnectivityBanner(),
-            Padding(
+      body: Column(
+        children: [
+          const ConnectivityBanner(),
+          Expanded(
+            child: Padding(
               padding: const EdgeInsets.all(SsSpacing.xl),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Create Your Profile',
+                    'Set your Password',
                     style: SsTypeScale.h3.copyWith(color: c.onSurface),
                   ),
                   const SizedBox(height: SsSpacing.sm),
                   Text(
-                    'Enter your name and email to get started.',
+                    'Account: ${widget.args.email}',
                     style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
                   ),
                   const SizedBox(height: SsSpacing.xl),
                   SsTextField(
-                    label: 'Full Name / Organization Name',
-                    controller: _nameController,
+                    label: 'Password (min 6 characters)',
+                    controller: _passwordController,
+                    obscureText: true,
+                    errorText: _hasError ? _errorMessage : null,
                     autofocus: true,
-                    errorText: _hasError && _nameController.text.trim().isEmpty
-                        ? 'Please enter your name'
-                        : null,
-                    onChanged: (_) => setState(() => _hasError = false),
-                  ),
-                  const SizedBox(height: SsSpacing.md),
-                  SsTextField(
-                    label: 'Email Address',
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    errorText: _hasError && !_emailController.text.contains('@')
-                        ? 'Please enter a valid email'
-                        : null,
                     onChanged: (_) => setState(() => _hasError = false),
                   ),
                   const SizedBox(height: SsSpacing.xl),
                   SsButton.primary(
-                    label: 'Continue',
+                    label: 'Complete Sign Up',
                     expand: true,
-                    onPressed: _isValid ? _proceedToPassword : null,
+                    isLoading: _verifying,
+                    onPressed: _passwordController.text.length >= 6 && !_verifying
+                        ? _authenticate
+                        : null,
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
