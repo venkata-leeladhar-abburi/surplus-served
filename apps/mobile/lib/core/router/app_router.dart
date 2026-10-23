@@ -192,6 +192,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: AppRoute.receiverProfile,
             builder: (context, state) => const ProfileScreen(),
           ),
+          GoRoute(
+  path: '/login',
+  name: 'login',
+  builder: (context, state) => const LoginScreen(),
+),
         ],
       ),
     ],
