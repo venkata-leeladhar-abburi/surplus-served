@@ -13,6 +13,7 @@ app.use(express.json());
 
 // Auth Routes
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/donations', require('./routes/donationRoutes'));
 
 const PORT = process.env.PORT || 5000;
 
