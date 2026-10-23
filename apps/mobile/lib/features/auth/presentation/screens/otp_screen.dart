@@ -44,7 +44,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             password: _passwordController.text.trim(),
             role: widget.args.role,
           );
-      
+
       ref.read(sessionProvider.notifier).signIn(session);
     } catch (e) {
       if (mounted) {
