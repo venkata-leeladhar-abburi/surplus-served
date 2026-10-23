@@ -30,13 +30,13 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
 
   final _titleController = TextEditingController(text: '');
   final _descriptionController = TextEditingController();
-  int _portions = 20;
+  final _portionsController=TextEditingController(text: '20');
   Duration _window = const Duration(hours: 2);
   final _localityController = TextEditingController();
 
   bool get _canAdvance => switch (_step) {
     0 => _titleController.text.trim().isNotEmpty,
-    1 => _portions > 0,
+    1 => (int.tryParse(_portionsController.text) ?? 0) > 0,
     2 => true,
     3 => _localityController.text.trim().isNotEmpty,
     _ => true,
@@ -56,7 +56,7 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
-          portions: _portions,
+          portions: int.tryParse(_portionsController.text) ?? 1,
           pickupWindowStart: now,
           pickupWindowEnd: now.add(_window),
           address: PickupAddress(locality: _localityController.text.trim()),
@@ -146,44 +146,30 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
             ],
           ),
         );
-      case 1:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(steps[1], style: SsTypeScale.h3.copyWith(color: c.onSurface)),
-            const SizedBox(height: SsSpacing.xl),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SsIconButton(
-                  icon: SsIcons.minus,
-                  tooltip: l10n.donorCreatePortionsMinusTooltip,
-                  onPressed: _portions > 1
-                      ? () => setState(() => _portions -= 5)
-                      : null,
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: SsSpacing.xl),
-                  child: Text(
-                    '$_portions',
-                    style: SsTypeScale.h1.copyWith(color: c.onSurface),
-                  ),
-                ),
-                SsIconButton(
-                  icon: SsIcons.plus,
-                  tooltip: l10n.donorCreatePortionsPlusTooltip,
-                  onPressed: () => setState(() => _portions += 5),
-                ),
-              ],
-            ),
-            const SizedBox(height: SsSpacing.sm),
-            Center(
-              child: Text(
-                l10n.donorCreatePortionsUnit,
-                style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
+     case 1:
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(steps[1], style: SsTypeScale.h3.copyWith(color: c.onSurface)),
+              const SizedBox(height: SsSpacing.xl),
+              SsTextField(
+                label: l10n.donorCreatePortionsUnit,
+                hint: 'Enter number of portions',
+                controller: _portionsController,
+                keyboardType: TextInputType.number,
+                autofocus: true,
+                onChanged: (_) => setState(() {}),
               ),
-            ),
-          ],
+              const SizedBox(height: SsSpacing.sm),
+              Center(
+                child: Text(
+                  'Enter the total number of portions available',
+                  style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
+                ),
+              ),
+            ],
+          ),
         );
       case 2:
         return Column(
@@ -249,7 +235,7 @@ class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
               ),
               _ReviewRow(
                 label: l10n.donorCreateReviewPortionsLabel,
-                value: '$_portions',
+                value: _portionsController.text,
               ),
               _ReviewRow(
                 label: l10n.donorCreateReviewWindowLabel,
