@@ -82,7 +82,7 @@ class HttpDonationRepository implements DonationRepository {
     if (response.statusCode == 201) {
       return _fromJson(jsonDecode(response.body));
     } else {
-      final errorBody=jsonDecode(Response.body);
+      final errorBody=jsonDecode(response.body);
       
       throw Exception(errorBody['message'] ?? 'Failed to create donation');
     }
