@@ -1,13 +1,10 @@
 import 'donation.dart';
+import 'pickup_address.dart';
 
-/// Abstract interface — `data/` provides the implementation (fixtures today,
-/// Dio + Drift once `apps/api` exists). Nothing above this import knows or
-/// cares which.
 abstract class DonationRepository {
-  /// All donations belonging to [donorId], newest first.
-  Stream<List<Donation>> watchDonorDonations(String donorId);
+  Stream<List<Donation>> watchDonorDonations(String donorId, {String? authToken});
 
-  Future<Donation> getById(String id);
+  Future<Donation> getById(String id, {String? authToken});
 
   Future<Donation> create({
     required String donorId,
@@ -18,7 +15,8 @@ abstract class DonationRepository {
     required DateTime pickupWindowStart,
     required DateTime pickupWindowEnd,
     required PickupAddress address,
+    String? authToken,
   });
 
-  Future<void> cancel(String id);
+  Future<void> cancel(String id, {String? authToken});
 }
