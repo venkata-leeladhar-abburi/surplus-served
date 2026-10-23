@@ -80,6 +80,7 @@ class HttpDonationRepository implements DonationRepository {
   }
 
   Donation _fromJson(Map<String, dynamic> json) {
+    final statusStr = json['status']?.toString().toLowerCase();
     return Donation(
       id: json['_id'] ?? json['id'] ?? '',
       donorId: json['donorId'] ?? '',
@@ -88,8 +89,8 @@ class HttpDonationRepository implements DonationRepository {
       description: json['description'],
       portions: json['portions'] ?? 0,
       status: DonationStatus.values.firstWhere(
-        (e) => e.name == (json['status'] ?? 'available'),
-        orElse: () => DonationStatus.available,
+        (e) => e.name.toLowerCase() == statusStr,
+        orElse: () => DonationStatus.values.first,
       ),
       pickupWindowStart: json['pickupWindowStart'] != null 
           ? DateTime.parse(json['pickupWindowStart']) 
