@@ -4,21 +4,32 @@ import '../domain/user_role.dart';
 
 class AuthRepositoryFixture implements AuthRepository {
   @override
-  Future<void> sendOtp(String phone) async {
-    await Future.delayed(const Duration(milliseconds: 300));
+  Future<Session> register({
+    required String name,
+    required String email,
+    required String password,
+    required UserRole role,
+  }) async {
+    return Session(
+      userId: 'mock_user_123',
+      name: name,
+      phone: '',
+      role: role,
+      token: 'mock_jwt_token',
+    );
   }
 
   @override
-  Future<Session> verifyOtp({
-    required String phone,
-    required String otp,
-    required UserRole role,
+  Future<Session> login({
+    required String email,
+    required String password,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    final id = role == UserRole.donor ? 'donor-demo' : 'ngo-demo';
-    final name = role == UserRole.donor
-        ? 'Green Leaf Caterers'
-        : 'Anna Poorna Trust';
-    return Session(userId: id, name: name, phone: phone, role: role);
+    return const Session(
+      userId: 'mock_user_123',
+      name: 'Mock User',
+      phone: '',
+      role: UserRole.donor,
+      token: 'mock_jwt_token',
+    );
   }
 }
