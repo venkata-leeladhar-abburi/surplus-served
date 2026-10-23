@@ -107,6 +107,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           return OtpScreen(args: args);
         },
       ),
+       GoRoute(
+  path: '/login',
+  name: 'login',
+  builder: (context, state) => const LoginScreen(),
+),
 
       // Donor
       GoRoute(
@@ -193,11 +198,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: AppRoute.receiverProfile,
             builder: (context, state) => const ProfileScreen(),
           ),
-          GoRoute(
-  path: '/login',
-  name: 'login',
-  builder: (context, state) => const LoginScreen(),
-),
+         
         ],
       ),
     ],
