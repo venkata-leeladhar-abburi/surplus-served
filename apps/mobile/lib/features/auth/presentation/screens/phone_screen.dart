@@ -3,10 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
-import '../../../../core/l10n/app_localizations.dart';
 import '../../../../shared/widgets/connectivity_banner.dart';
 import '../../domain/user_role.dart';
-import 'otp_screen.dart';
+import 'otp_screen.dart'; // We will use this to pass args to the password screen
 
 class PhoneScreen extends ConsumerStatefulWidget {
   const PhoneScreen({super.key, required this.role});
@@ -18,10 +17,14 @@ class PhoneScreen extends ConsumerStatefulWidget {
 }
 
 class _PhoneScreenState extends ConsumerState<PhoneScreen> {
-  final _controller = TextEditingController();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   bool _hasError = false;
 
-  bool get _isValid => _controller.text.contains('@') && _controller.text.contains('.');
+  bool get _isValid =>
+      _nameController.text.trim().isNotEmpty &&
+      _emailController.text.contains('@') &&
+      _emailController.text.contains('.');
 
   void _proceedToPassword() {
     if (!_isValid) {
@@ -29,8 +32,12 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
       return;
     }
     context.pushNamed(
-      'otp',
-      extra: OtpScreenArgs(phone: _controller.text.trim(), role: widget.role),
+      'otp', // Routes to password screen
+      extra: OtpScreenArgs(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        role: widget.role,
+      ),
     );
   }
 
@@ -40,31 +47,42 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(backgroundColor: c.background, elevation: 0),
-      body: Column(
-        children: [
-          const ConnectivityBanner(),
-          Expanded(
-            child: Padding(
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            const ConnectivityBanner(),
+            Padding(
               padding: const EdgeInsets.all(SsSpacing.xl),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Enter your Email',
+                    'Create Your Profile',
                     style: SsTypeScale.h3.copyWith(color: c.onSurface),
                   ),
                   const SizedBox(height: SsSpacing.sm),
                   Text(
-                    'We will use this email for your account login.',
+                    'Enter your name and email to get started.',
                     style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
                   ),
                   const SizedBox(height: SsSpacing.xl),
                   SsTextField(
-                    label: 'Email Address',
-                    controller: _controller,
-                    keyboardType: TextInputType.emailAddress,
-                    errorText: _hasError ? 'Please enter a valid email' : null,
+                    label: 'Full Name / Organization Name',
+                    controller: _nameController,
                     autofocus: true,
+                    errorText: _hasError && _nameController.text.trim().isEmpty
+                        ? 'Please enter your name'
+                        : null,
+                    onChanged: (_) => setState(() => _hasError = false),
+                  ),
+                  const SizedBox(height: SsSpacing.md),
+                  SsTextField(
+                    label: 'Email Address',
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    errorText: _hasError && !_emailController.text.contains('@')
+                        ? 'Please enter a valid email'
+                        : null,
                     onChanged: (_) => setState(() => _hasError = false),
                   ),
                   const SizedBox(height: SsSpacing.xl),
@@ -76,8 +94,8 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
