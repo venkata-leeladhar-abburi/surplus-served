@@ -74,14 +74,17 @@ class HttpDonationRepository implements DonationRepository {
         'portions': portions,
         'pickupWindowStart': pickupWindowStart.toIso8601String(),
         'pickupWindowEnd': pickupWindowEnd.toIso8601String(),
-        'address': {'locality': address.locality},
+        'address': {'locality': address.locality,
+                    'exactLine':address.exactLine},
       }),
     );
 
     if (response.statusCode == 201) {
       return _fromJson(jsonDecode(response.body));
     } else {
-      throw Exception('Failed to create donation');
+      final errorBody=jsonDecode(Response.body);
+      
+      throw Exception(errorBody['message'] ?? 'Failed to create donation');
     }
   }
 
