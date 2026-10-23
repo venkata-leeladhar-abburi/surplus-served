@@ -7,7 +7,7 @@ import '../features/auth/domain/auth_repository.dart';
 import '../features/auth/domain/session.dart';
 import '../features/discovery/data/discovery_repository_fixture.dart';
 import '../features/discovery/domain/discovery_repository.dart';
-import '../features/donation/data/donation_repository_fixture.dart';
+import '../features/donation/data/http_donation_repository.dart';
 import '../features/donation/domain/donation_repository.dart';
 import '../features/notifications/data/notification_repository_fixture.dart';
 import '../features/notifications/domain/notification_repository.dart';
