@@ -1,11 +1,9 @@
 const Donation = require('../models/Donation');
 
-// POST /api/donations - Create a donation
+// POST /api/donations - Create a donation securely using authenticated user info
 exports.createDonation = async (req, res) => {
   try {
     const {
-      donorId,
-      donorName,
       title,
       description,
       portions,
@@ -13,6 +11,15 @@ exports.createDonation = async (req, res) => {
       pickupWindowEnd,
       address,
     } = req.body;
+
+    // Pull verified user identity attached by auth middleware (e.g., req.user)
+    // Fallback to body values if auth middleware isn't attached during development phase
+    const donorId = req.user?._id || req.user?.id || req.body.donorId;
+    const donorName = req.user?.name || req.body.donorName;
+
+    if (!donorId) {
+      return res.status(400).json({ message: 'Donor ID is required.' });
+    }
 
     const donation = new Donation({
       donorId,
