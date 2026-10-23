@@ -84,8 +84,8 @@ class HttpDonationRepository implements DonationRepository {
           'pickupWindowStart': pickupWindowStart.toIso8601String(),
           'pickupWindowEnd': pickupWindowEnd.toIso8601String(),
           'address': {
-            'locality': address.locality,
-            'exactLine': address.exactLine,
+            'locality': address.locality
+            
           },
         }),
       ).timeout(const Duration(seconds: 30)); // Extended timeout for Render spin-up delays
