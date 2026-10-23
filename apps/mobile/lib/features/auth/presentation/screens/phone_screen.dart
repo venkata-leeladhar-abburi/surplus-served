@@ -5,7 +5,7 @@ import 'package:ss_design_system/ss_design_system.dart';
 
 import '../../../../shared/widgets/connectivity_banner.dart';
 import '../../domain/user_role.dart';
-import 'otp_screen.dart'; // We will use this to pass args to the password screen
+import 'otp_screen.dart';
 
 class PhoneScreen extends ConsumerStatefulWidget {
   const PhoneScreen({super.key, required this.role});
@@ -32,7 +32,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
       return;
     }
     context.pushNamed(
-      'otp', // Routes to password screen
+      'otp',
       extra: OtpScreenArgs(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
