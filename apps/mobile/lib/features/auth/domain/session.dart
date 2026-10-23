@@ -6,10 +6,12 @@ class Session {
     required this.name,
     required this.phone,
     required this.role,
+    this.token,
   });
 
   final String userId;
   final String name;
   final String phone;
   final UserRole role;
+  final String? token;
 }
