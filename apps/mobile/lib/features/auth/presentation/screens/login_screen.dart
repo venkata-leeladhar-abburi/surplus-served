@@ -38,12 +38,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       ref.read(sessionProvider.notifier).signIn(session);
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _hasError = true;
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
-        });
+      final msg = e.toString().replaceAll('Exception: ', '');
+      if (!mounted) return;
+
+      // Unregistered user -> send them to the sign-up flow
+      if (msg.contains('No account found')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No account found. Please register.')),
+        );
+        context.goNamed('roleSelect');
+        return;
       }
+
+      setState(() {
+        _hasError = true;
+        _errorMessage = msg;
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -97,7 +107,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: SsSpacing.md),
                   TextButton(
-                    onPressed: () => context.pushNamed('phone'), // Or navigate back to registration
+                    onPressed: () => context.goNamed('roleSelect'),
                     child: const Text('Don\'t have an account? Sign Up'),
                   ),
                 ],
