@@ -61,6 +61,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final session = ref.read(sessionProvider);
       final loggingIn =
           state.matchedLocation == '/' ||
+          state.matchedLocation == '/login' ||
           state.matchedLocation.startsWith('/role') ||
           state.matchedLocation.startsWith('/auth');
 
