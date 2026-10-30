@@ -42,6 +42,11 @@ class RoleSelectScreen extends StatelessWidget {
                 onTap: () =>
                     context.pushNamed('phone', extra: UserRole.receiver),
               ),
+              const SizedBox(height: SsSpacing.lg),
+              TextButton(
+                onPressed: () => context.pushNamed('login'),
+                child: const Text('Already have an account? Log in'),
+              ),
               const Spacer(flex: 2),
             ],
           ),
