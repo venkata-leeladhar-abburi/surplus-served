@@ -10,7 +10,22 @@ const generateToken = (id, role) => {
 // Register User
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, role, ngoDetails } = req.body;
+    const { name, password, role, ngoDetails } = req.body;
+    const email = (req.body.email || '').trim().toLowerCase();
+
+    if (!name || !email || !password || !role) {
+      return res
+        .status(400)
+        .json({ message: 'Name, email, password and role are required' });
+    }
+    if (password.length < 6) {
+      return res
+        .status(400)
+        .json({ message: 'Password must be at least 6 characters' });
+    }
+    if (!['donor', 'receiver', 'ngo'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
 
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -25,20 +40,16 @@ const registerUser = async (req, res) => {
       email,
       password: hashedPassword,
       role,
-      ngoDetails: role === 'ngo' ? ngoDetails : undefined
+      ngoDetails: role === 'ngo' ? ngoDetails : undefined,
     });
 
-    if (user) {
-      res.status(201).json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        token: generateToken(user._id, user.role),
-      });
-    } else {
-      res.status(400).json({ message: 'Invalid user data' });
-    }
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: generateToken(user._id, user.role),
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -47,20 +58,29 @@ const registerUser = async (req, res) => {
 // Login User
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = (req.body.email || '').trim().toLowerCase();
 
     const user = await User.findOne({ email });
-    if (user && (await bcrypt.compare(password, user.password))) {
-      res.json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        token: generateToken(user._id, user.role),
-      });
-    } else {
-      res.status(401).json({ message: 'Invalid email or password' });
+
+    // Unregistered email -> 404 so the app can send the user to sign-up
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: 'No account found. Please register.' });
     }
+
+    if (!(await bcrypt.compare(password || '', user.password))) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: generateToken(user._id, user.role),
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
