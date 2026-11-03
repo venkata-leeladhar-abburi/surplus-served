@@ -66,6 +66,10 @@ typeof parsedAddress.locality !== 'string' ||
 
     // Upload image to Cloudinary if provided
     if (req.file) {
+      console.log(
+  'Image file signature:',
+  req.file.buffer.subarray(0, 8).toString('hex')
+);
   const uploadResult = await new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
