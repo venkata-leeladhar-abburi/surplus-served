@@ -19,15 +19,17 @@ const generateToken = (id, role) => {
 // Register User
 const registerUser = async (req, res) => {
   try {
-    const { password, role, ngoDetails } = req.body;
+    const { password, role } = req.body;
 
-    const name = typeof req.body.name === 'string'
-      ? req.body.name.trim()
-      : '';
+    const name =
+      typeof req.body.name === 'string'
+        ? req.body.name.trim()
+        : '';
 
-    const email = typeof req.body.email === 'string'
-      ? req.body.email.trim().toLowerCase()
-      : '';
+    const email =
+      typeof req.body.email === 'string'
+        ? req.body.email.trim().toLowerCase()
+        : '';
 
     if (!name || !email || !password || !role) {
       return res.status(400).json({
@@ -53,6 +55,34 @@ const registerUser = async (req, res) => {
       });
     }
 
+    let ngoDetails = undefined;
+
+    if (role === 'ngo') {
+      const organizationName =
+        typeof req.body.ngoDetails?.organizationName === 'string'
+          ? req.body.ngoDetails.organizationName.trim()
+          : '';
+
+      const registrationNumber =
+        typeof req.body.ngoDetails?.registrationNumber === 'string'
+          ? req.body.ngoDetails.registrationNumber.trim()
+          : '';
+
+      if (!organizationName || !registrationNumber) {
+        return res.status(400).json({
+          message: 'NGO organization name and registration number are required.',
+        });
+      }
+
+      ngoDetails = {
+        organizationName,
+        registrationNumber,
+        verificationStatus: 'pending',
+        documentUrl: null,
+        rejectionReason: null,
+      };
+    }
+
     const userExists = await User.findOne({ email });
 
     if (userExists) {
@@ -68,7 +98,7 @@ const registerUser = async (req, res) => {
       email,
       password: hashedPassword,
       role,
-      ngoDetails: role === 'ngo' ? ngoDetails : undefined,
+      ngoDetails,
     });
 
     const token = generateToken(user._id, user.role);
@@ -78,6 +108,7 @@ const registerUser = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      ngoDetails: user.ngoDetails,
       token,
     });
   } catch (error) {
@@ -98,9 +129,10 @@ const registerUser = async (req, res) => {
 // Login User
 const loginUser = async (req, res) => {
   try {
-    const email = typeof req.body.email === 'string'
-      ? req.body.email.trim().toLowerCase()
-      : '';
+    const email =
+      typeof req.body.email === 'string'
+        ? req.body.email.trim().toLowerCase()
+        : '';
 
     const { password } = req.body;
 
@@ -136,6 +168,7 @@ const loginUser = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      ngoDetails: user.ngoDetails,
       token,
     });
   } catch (error) {
