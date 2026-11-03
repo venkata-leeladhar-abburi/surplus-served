@@ -17,6 +17,17 @@ exports.createDonation = async (req, res) => {
       pickupWindowEnd,
       address,
     } = req.body;
+    let parsedAddress = address;
+
+if (typeof address === 'string') {
+  try {
+    parsedAddress = JSON.parse(address);
+  } catch (error) {
+    return res.status(400).json({
+      message: 'Invalid address format.',
+    });
+  }
+}
 
     const parsedPortions = Number(portions);
 
@@ -27,10 +38,10 @@ exports.createDonation = async (req, res) => {
       parsedPortions < 1 ||
       !pickupWindowStart ||
       !pickupWindowEnd ||
-      !address ||
-      typeof address.locality !== 'string' ||
-      !address.locality.trim()
-    ) {
+      !parsedAddress ||
+typeof parsedAddress.locality !== 'string' ||
+!parsedAddress.locality.trim()
+      ) {
       return res.status(400).json({
         message: 'Please provide all required donation details.',
       });
@@ -85,8 +96,8 @@ exports.createDonation = async (req, res) => {
       pickupWindowStart: start,
       pickupWindowEnd: end,
       address: {
-        locality: address.locality.trim(),
-      },
+  locality: parsedAddress.locality.trim(),
+},
       imageUrl,
       imagePublicId,
       status: 'available',
