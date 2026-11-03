@@ -119,7 +119,7 @@ exports.getMyDonations = async (req, res) => {
 };
 
 // GET /api/donations/:id
-// Fetch an individual donation
+// Fetch donation details; pickup code is visible only to its original donor
 exports.getDonationById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -130,12 +130,20 @@ exports.getDonationById = async (req, res) => {
       });
     }
 
-    const donation = await Donation.findById(id);
+    let donation = await Donation.findById(id);
 
     if (!donation) {
       return res.status(404).json({
         message: 'Donation not found.',
       });
+    }
+
+    // Only the original donor can retrieve the pickup code.
+    if (
+      req.user.role === 'donor' &&
+      String(donation.donorId) === String(req.user._id)
+    ) {
+      donation = await Donation.findById(id).select('+pickupCode');
     }
 
     return res.status(200).json(donation);
