@@ -66,6 +66,12 @@ typeof parsedAddress.locality !== 'string' ||
 
     // Upload image to Cloudinary if provided
     if (req.file) {
+      console.log('Uploaded file details:', {
+  originalname: req.file.originalname,
+  mimetype: req.file.mimetype,
+  size: req.file.size,
+  bufferLength: req.file.buffer?.length,
+});
       const base64Image = req.file.buffer.toString('base64');
 
       const dataUri =
