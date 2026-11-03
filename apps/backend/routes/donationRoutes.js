@@ -40,14 +40,6 @@ router.get(
   donationController.getDonations
 );
 
-// Individual donation details
-router.get(
-  '/:id',
-  protect,
-  authorizeRoles('donor', 'receiver', 'ngo'),
-  donationController.getDonationById
-);
-
 // Receiver allocation routes
 router.get(
   '/my-allocations',
@@ -69,5 +61,19 @@ router.post(
   authorizeRoles('receiver', 'ngo'),
   allocationController.verifyPickupCode
 );
+
+// Individual donation details
+router.get(
+  '/:id',
+  protect,
+  authorizeRoles('donor', 'receiver', 'ngo'),
+  donationController.getDonationById
+);
+
+
+
+
+
+
 
 module.exports = router;
