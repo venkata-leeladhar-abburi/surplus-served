@@ -17,17 +17,18 @@ exports.createDonation = async (req, res) => {
       pickupWindowEnd,
       address,
     } = req.body;
+
     let parsedAddress = address;
 
-if (typeof address === 'string') {
-  try {
-    parsedAddress = JSON.parse(address);
-  } catch (error) {
-    return res.status(400).json({
-      message: 'Invalid address format.',
-    });
-  }
-}
+    if (typeof address === 'string') {
+      try {
+        parsedAddress = JSON.parse(address);
+      } catch (error) {
+        return res.status(400).json({
+          message: 'Invalid address format.',
+        });
+      }
+    }
 
     const parsedPortions = Number(portions);
 
@@ -39,9 +40,9 @@ if (typeof address === 'string') {
       !pickupWindowStart ||
       !pickupWindowEnd ||
       !parsedAddress ||
-typeof parsedAddress.locality !== 'string' ||
-!parsedAddress.locality.trim()
-      ) {
+      typeof parsedAddress.locality !== 'string' ||
+      !parsedAddress.locality.trim()
+    ) {
       return res.status(400).json({
         message: 'Please provide all required donation details.',
       });
@@ -66,36 +67,28 @@ typeof parsedAddress.locality !== 'string' ||
 
     // Upload image to Cloudinary if provided
     if (req.file) {
-      console.log('Buffer constructor:', req.file.buffer.constructor.name);
-console.log('Buffer is Buffer:', Buffer.isBuffer(req.file.buffer));
-console.log('First 12 bytes:', [...req.file.buffer.subarray(0, 12)]);
-console.log('Original filename:', req.file.originalname);
-      console.log(
-  'Image file signature:',
-  req.file.buffer.subarray(0, 8).toString('hex')
-);
-  const uploadResult = await new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: 'surplus-served/food-donations',
-        resource_type: 'image',
-      },
-      (error, result) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(result);
-        }
-      }
-    );
+      const uploadResult = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'surplus-served/food-donations',
+            resource_type: 'image',
+          },
+          (error, result) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(result);
+            }
+          }
+        );
 
-    uploadStream.end(req.file.buffer);
-  });
+        uploadStream.end(req.file.buffer);
+      });
 
-  imageUrl = uploadResult.secure_url;
-  imagePublicId = uploadResult.public_id;
-  uploadedImagePublicId = uploadResult.public_id;
-}
+      imageUrl = uploadResult.secure_url;
+      imagePublicId = uploadResult.public_id;
+      uploadedImagePublicId = uploadResult.public_id;
+    }
 
     const donation = await Donation.create({
       donorId: req.user._id,
@@ -109,8 +102,8 @@ console.log('Original filename:', req.file.originalname);
       pickupWindowStart: start,
       pickupWindowEnd: end,
       address: {
-  locality: parsedAddress.locality.trim(),
-},
+        locality: parsedAddress.locality.trim(),
+      },
       imageUrl,
       imagePublicId,
       status: 'available',
@@ -138,29 +131,6 @@ console.log('Original filename:', req.file.originalname);
   }
 };
 
-// GET /api/donations
-// Fetch available donations
-exports.getDonations = async (req, res) => {
-  try {
-    const donations = await Donation.find({
-      status: 'available',
-      pickupWindowEnd: { $gt: new Date() },
-    }).sort({ createdAt: -1 });
-
-    return res.status(200).json({
-      count: donations.length,
-      donations,
-    });
-  } catch (error) {
-    console.error('Fetch donations error:', error);
-    return res.status(500).json({
-      message: 'Unable to fetch donations.',
-    });
-  }
-};
-
-// GET /api/donations/mine
-// Fetch donor history with optional status filtering
 // GET /api/donations
 // Fetch available donations with search and locality filters
 exports.getDonations = async (req, res) => {
@@ -203,6 +173,50 @@ exports.getDonations = async (req, res) => {
     });
   }
 };
+
+// GET /api/donations/mine
+// Fetch donor history with optional status filtering
+exports.getMyDonations = async (req, res) => {
+  try {
+    const { status } = req.query;
+
+    const allowedStatuses = [
+      'available',
+      'claimed',
+      'collected',
+      'cancelled',
+    ];
+
+    const filter = {
+      donorId: req.user._id,
+    };
+
+    if (status) {
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({
+          message: 'Invalid donation status.',
+        });
+      }
+
+      filter.status = status;
+    }
+
+    const donations = await Donation.find(filter)
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      count: donations.length,
+      donations,
+    });
+  } catch (error) {
+    console.error('Fetch donor donations error:', error);
+
+    return res.status(500).json({
+      message: 'Unable to fetch your donations.',
+    });
+  }
+};
+
 // GET /api/donations/:id
 // Pickup code visible only to the original donor
 exports.getDonationById = async (req, res) => {
@@ -233,6 +247,7 @@ exports.getDonationById = async (req, res) => {
     return res.status(200).json(donation);
   } catch (error) {
     console.error('Fetch donation details error:', error);
+
     return res.status(500).json({
       message: 'Unable to fetch donation details.',
     });
@@ -289,6 +304,7 @@ exports.cancelDonation = async (req, res) => {
     });
   } catch (error) {
     console.error('Cancel donation error:', error);
+
     return res.status(500).json({
       message: 'Unable to cancel donation.',
     });
