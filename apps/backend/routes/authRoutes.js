@@ -6,6 +6,7 @@ const {
   registerUser,
   loginUser,
   getMe,
+   createInitialAdmin,
 } = require('../controllers/authController');
 
 const { protect } = require('../middleware/authMiddleware');
