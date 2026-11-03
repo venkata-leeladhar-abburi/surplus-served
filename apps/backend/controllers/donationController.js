@@ -66,29 +66,28 @@ typeof parsedAddress.locality !== 'string' ||
 
     // Upload image to Cloudinary if provided
     if (req.file) {
-      console.log('Uploaded file details:', {
-  originalname: req.file.originalname,
-  mimetype: req.file.mimetype,
-  size: req.file.size,
-  bufferLength: req.file.buffer?.length,
-});
-      const base64Image = req.file.buffer.toString('base64');
-
-      const dataUri =
-        `data:${req.file.mimetype};base64,${base64Image}`;
-
-      const uploadResult = await cloudinary.uploader.upload(
-        dataUri,
-        {
-          folder: 'surplus-served/food-donations',
-          resource_type: 'image',
+  const uploadResult = await new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'surplus-served/food-donations',
+        resource_type: 'image',
+      },
+      (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
         }
-      );
+      }
+    );
 
-      imageUrl = uploadResult.secure_url;
-      imagePublicId = uploadResult.public_id;
-      uploadedImagePublicId = uploadResult.public_id;
-    }
+    uploadStream.end(req.file.buffer);
+  });
+
+  imageUrl = uploadResult.secure_url;
+  imagePublicId = uploadResult.public_id;
+  uploadedImagePublicId = uploadResult.public_id;
+}
 
     const donation = await Donation.create({
       donorId: req.user._id,
