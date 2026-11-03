@@ -46,6 +46,27 @@ const donationSchema = new mongoose.Schema(
       enum: ['available', 'claimed', 'collected', 'cancelled'],
       default: 'available',
     },
+    allocatedToNgoId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'User',
+  default: null,
+},
+
+allocatedToNgoName: {
+  type: String,
+  default: null,
+},
+
+pickupCode: {
+  type: String,
+  default: null,
+  select: false,
+},
+
+collectedAt: {
+  type: Date,
+  default: null,
+},
   },
   { timestamps: true }
 );
