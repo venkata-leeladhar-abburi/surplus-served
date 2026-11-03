@@ -87,12 +87,35 @@ exports.requestDonation = async (req, res) => {
   }
 };
 
-// Fetch allocations belonging to the logged-in receiver.
+// GET /api/donations/my-allocations
+// Fetch receiver history with optional status filtering.
 exports.getMyAllocations = async (req, res) => {
   try {
-    const donations = await Donation.find({
+    const { status } = req.query;
+
+    const allowedStatuses = [
+      'available',
+      'claimed',
+      'collected',
+      'cancelled',
+    ];
+
+    if (status && !allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        message: 'Invalid donation status filter.',
+        allowedStatuses,
+      });
+    }
+
+    const filter = {
       allocatedToNgoId: req.user._id,
-    })
+    };
+
+    if (status) {
+      filter.status = status;
+    }
+
+    const donations = await Donation.find(filter)
       .select('-pickupCode')
       .sort({ updatedAt: -1 });
 
@@ -104,11 +127,12 @@ exports.getMyAllocations = async (req, res) => {
     console.error('Fetch allocations error:', error);
 
     return res.status(500).json({
-      message: 'Unable to fetch your allocations.',
+      message: 'Unable to fetch your allocation history.',
     });
   }
 };
 
+// POST /api/donations/:id/verify-pickup
 // Verify pickup code and complete the donation.
 exports.verifyPickupCode = async (req, res) => {
   try {
@@ -145,7 +169,6 @@ exports.verifyPickupCode = async (req, res) => {
       });
     }
 
-    // Conditional update prevents duplicate collection.
     const updatedDonation = await Donation.findOneAndUpdate(
       {
         _id: id,
