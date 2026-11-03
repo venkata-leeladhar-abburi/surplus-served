@@ -5,6 +5,7 @@ const router = express.Router();
 const donationController = require('../controllers/donationController');
 const allocationController = require('../controllers/allocationController');
 const dashboardController = require('../controllers/dashboardController');
+const upload = require('../middleware/uploadMiddleware');
 
 const {
   protect,
@@ -16,6 +17,7 @@ router.post(
   '/',
   protect,
   authorizeRoles('donor'),
+  upload.single('image'),
   donationController.createDonation
 );
 
