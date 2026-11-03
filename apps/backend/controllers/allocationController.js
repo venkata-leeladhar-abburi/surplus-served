@@ -5,6 +5,8 @@ const Donation = require('../models/Donation');
 
 // Request and allocate a donation.
 // The first valid request wins through an atomic MongoDB update.
+
+
 exports.requestDonation = async (req, res) => {
   try {
     const { id } = req.params;
@@ -16,6 +18,19 @@ exports.requestDonation = async (req, res) => {
     }
 
     const receiver = req.user;
+
+    // NGO verification check
+    if (
+      receiver.role === 'ngo' &&
+      receiver.ngoDetails?.verificationStatus !== 'verified'
+    ) {
+      return res.status(403).json({
+        message: 'Your NGO account is not verified. You cannot request donations yet.',
+        verificationStatus:
+          receiver.ngoDetails?.verificationStatus || 'pending',
+      });
+    }
+
     const pickupCode = String(crypto.randomInt(1000, 10000));
 
     const donation = await Donation.findOneAndUpdate(
