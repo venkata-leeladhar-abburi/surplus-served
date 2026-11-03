@@ -200,8 +200,93 @@ const getMe = async (req, res) => {
   }
 };
 
+
+// Create the first admin account securely
+const createInitialAdmin = async (req, res) => {
+  try {
+    const { name, email, password, setupSecret } = req.body;
+
+    // Verify the setup secret stored in Render
+    if (
+      !process.env.ADMIN_SETUP_SECRET ||
+      !setupSecret ||
+      setupSecret !== process.env.ADMIN_SETUP_SECRET
+    ) {
+      return res.status(403).json({
+        message: 'Invalid admin setup credentials.',
+      });
+    }
+
+    // Prevent creation if an admin already exists
+    const existingAdmin = await User.findOne({ role: 'admin' });
+
+    if (existingAdmin) {
+      return res.status(409).json({
+        message: 'An admin account already exists.',
+      });
+    }
+
+    const cleanName =
+      typeof name === 'string' ? name.trim() : '';
+
+    const cleanEmail =
+      typeof email === 'string' ? email.trim().toLowerCase() : '';
+
+    if (!cleanName || !cleanEmail || !password) {
+      return res.status(400).json({
+        message: 'Name, email and password are required.',
+      });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return res.status(400).json({
+        message: 'Please provide a valid email address.',
+      });
+    }
+
+    if (typeof password !== 'string' || password.length < 12) {
+      return res.status(400).json({
+        message: 'Admin password must be at least 12 characters.',
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const admin = await User.create({
+      name: cleanName,
+      email: cleanEmail,
+      password: hashedPassword,
+      role: 'admin',
+    });
+
+    return res.status(201).json({
+      message: 'Initial admin account created successfully.',
+      admin: {
+        _id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+      },
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({
+        message: 'An account with this email already exists.',
+      });
+    }
+
+    console.error('Admin creation error:', error);
+
+    return res.status(500).json({
+      message: 'Unable to create admin account.',
+    });
+  }
+};
+
+
 module.exports = {
   registerUser,
   loginUser,
   getMe,
+  createInitialAdmin,
 };
