@@ -4,6 +4,7 @@ const router = express.Router();
 
 const donationController = require('../controllers/donationController');
 const allocationController = require('../controllers/allocationController');
+const dashboardController = require('../controllers/dashboardController');
 
 const {
   protect,
@@ -60,6 +61,20 @@ router.post(
   protect,
   authorizeRoles('receiver', 'ngo'),
   allocationController.verifyPickupCode
+);
+
+router.get(
+  '/dashboard/donor',
+  protect,
+  authorizeRoles('donor'),
+  dashboardController.getDonorDashboard
+);
+
+router.get(
+  '/dashboard/receiver',
+  protect,
+  authorizeRoles('receiver', 'ngo'),
+  dashboardController.getReceiverDashboard
 );
 
 // Individual donation details
