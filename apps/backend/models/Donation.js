@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 
 const donationSchema = new mongoose.Schema(
@@ -47,26 +48,23 @@ const donationSchema = new mongoose.Schema(
       default: 'available',
     },
     allocatedToNgoId: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: 'User',
-  default: null,
-},
-
-allocatedToNgoName: {
-  type: String,
-  default: null,
-},
-
-pickupCode: {
-  type: String,
-  default: null,
-  select: false,
-},
-
-collectedAt: {
-  type: Date,
-  default: null,
-},
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    allocatedToNgoName: {
+      type: String,
+      default: null,
+    },
+    pickupCode: {
+      type: String,
+      default: null,
+      select: false,
+    },
+    collectedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
