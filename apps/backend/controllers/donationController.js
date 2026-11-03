@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const Donation = require('../models/Donation');
 
 // POST /api/donations
-// Create a donation using the authenticated donor's identity
+// Create a donation
 exports.createDonation = async (req, res) => {
   try {
     const {
@@ -68,7 +68,6 @@ exports.createDonation = async (req, res) => {
     });
   } catch (error) {
     console.error('Create donation error:', error);
-
     return res.status(500).json({
       message: 'Unable to create donation.',
     });
@@ -76,7 +75,7 @@ exports.createDonation = async (req, res) => {
 };
 
 // GET /api/donations
-// Fetch available donations for receivers
+// Fetch available donations
 exports.getDonations = async (req, res) => {
   try {
     const donations = await Donation.find({
@@ -90,7 +89,6 @@ exports.getDonations = async (req, res) => {
     });
   } catch (error) {
     console.error('Fetch donations error:', error);
-
     return res.status(500).json({
       message: 'Unable to fetch donations.',
     });
@@ -98,28 +96,50 @@ exports.getDonations = async (req, res) => {
 };
 
 // GET /api/donations/mine
-// Fetch donations created by the logged-in donor
+// Fetch donor history with optional status filtering
 exports.getMyDonations = async (req, res) => {
   try {
-    const donations = await Donation.find({
+    const { status } = req.query;
+
+    const allowedStatuses = [
+      'available',
+      'claimed',
+      'collected',
+      'cancelled',
+    ];
+
+    if (status && !allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        message: 'Invalid donation status filter.',
+        allowedStatuses,
+      });
+    }
+
+    const filter = {
       donorId: req.user._id,
-    }).sort({ createdAt: -1 });
+    };
+
+    if (status) {
+      filter.status = status;
+    }
+
+    const donations = await Donation.find(filter)
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       count: donations.length,
       donations,
     });
   } catch (error) {
-    console.error('Fetch donor donations error:', error);
-
+    console.error('Fetch donor history error:', error);
     return res.status(500).json({
-      message: 'Unable to fetch your donations.',
+      message: 'Unable to fetch your donation history.',
     });
   }
 };
 
 // GET /api/donations/:id
-// Fetch donation details; pickup code is visible only to its original donor
+// Pickup code visible only to the original donor
 exports.getDonationById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -138,7 +158,6 @@ exports.getDonationById = async (req, res) => {
       });
     }
 
-    // Only the original donor can retrieve the pickup code.
     if (
       req.user.role === 'donor' &&
       String(donation.donorId) === String(req.user._id)
@@ -149,7 +168,6 @@ exports.getDonationById = async (req, res) => {
     return res.status(200).json(donation);
   } catch (error) {
     console.error('Fetch donation details error:', error);
-
     return res.status(500).json({
       message: 'Unable to fetch donation details.',
     });
@@ -157,7 +175,7 @@ exports.getDonationById = async (req, res) => {
 };
 
 // PATCH /api/donations/:id/cancel
-// Only the original donor can cancel an available donation
+// Only the original donor can cancel available donations
 exports.cancelDonation = async (req, res) => {
   try {
     const { id } = req.params;
@@ -206,7 +224,6 @@ exports.cancelDonation = async (req, res) => {
     });
   } catch (error) {
     console.error('Cancel donation error:', error);
-
     return res.status(500).json({
       message: 'Unable to cancel donation.',
     });
