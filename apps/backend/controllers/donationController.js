@@ -1,10 +1,13 @@
 
 const mongoose = require('mongoose');
 const Donation = require('../models/Donation');
+const cloudinary = require('../config/cloudinary');
 
 // POST /api/donations
-// Create a donation
+// Create a donation with an optional food image
 exports.createDonation = async (req, res) => {
+  let uploadedImagePublicId = null;
+
   try {
     const {
       title,
@@ -15,11 +18,13 @@ exports.createDonation = async (req, res) => {
       address,
     } = req.body;
 
+    const parsedPortions = Number(portions);
+
     if (
       typeof title !== 'string' ||
       !title.trim() ||
-      !Number.isInteger(portions) ||
-      portions < 1 ||
+      !Number.isInteger(parsedPortions) ||
+      parsedPortions < 1 ||
       !pickupWindowStart ||
       !pickupWindowEnd ||
       !address ||
@@ -45,6 +50,29 @@ exports.createDonation = async (req, res) => {
       });
     }
 
+    let imageUrl = null;
+    let imagePublicId = null;
+
+    // Upload image to Cloudinary if provided
+    if (req.file) {
+      const base64Image = req.file.buffer.toString('base64');
+
+      const dataUri =
+        `data:${req.file.mimetype};base64,${base64Image}`;
+
+      const uploadResult = await cloudinary.uploader.upload(
+        dataUri,
+        {
+          folder: 'surplus-served/food-donations',
+          resource_type: 'image',
+        }
+      );
+
+      imageUrl = uploadResult.secure_url;
+      imagePublicId = uploadResult.public_id;
+      uploadedImagePublicId = uploadResult.public_id;
+    }
+
     const donation = await Donation.create({
       donorId: req.user._id,
       donorName: req.user.name,
@@ -53,12 +81,14 @@ exports.createDonation = async (req, res) => {
         typeof description === 'string'
           ? description.trim()
           : null,
-      portions,
+      portions: parsedPortions,
       pickupWindowStart: start,
       pickupWindowEnd: end,
       address: {
         locality: address.locality.trim(),
       },
+      imageUrl,
+      imagePublicId,
       status: 'available',
     });
 
@@ -67,7 +97,17 @@ exports.createDonation = async (req, res) => {
       donation,
     });
   } catch (error) {
+    // Remove uploaded image if donation creation fails
+    if (uploadedImagePublicId) {
+      try {
+        await cloudinary.uploader.destroy(uploadedImagePublicId);
+      } catch (cleanupError) {
+        console.error('Cloudinary cleanup error:', cleanupError);
+      }
+    }
+
     console.error('Create donation error:', error);
+
     return res.status(500).json({
       message: 'Unable to create donation.',
     });
