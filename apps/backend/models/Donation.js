@@ -22,6 +22,14 @@ const donationSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    imageUrl: {
+    type: String,
+    default: null,
+    },
+    imagePublicId: {
+    type: String,
+    default: null,
+    },
     portions: {
       type: Number,
       required: true,
