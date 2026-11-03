@@ -66,6 +66,10 @@ typeof parsedAddress.locality !== 'string' ||
 
     // Upload image to Cloudinary if provided
     if (req.file) {
+      console.log('Buffer constructor:', req.file.buffer.constructor.name);
+console.log('Buffer is Buffer:', Buffer.isBuffer(req.file.buffer));
+console.log('First 12 bytes:', [...req.file.buffer.subarray(0, 12)]);
+console.log('Original filename:', req.file.originalname);
       console.log(
   'Image file signature:',
   req.file.buffer.subarray(0, 8).toString('hex')
