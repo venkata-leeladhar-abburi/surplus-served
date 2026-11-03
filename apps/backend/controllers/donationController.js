@@ -161,30 +161,31 @@ exports.getDonations = async (req, res) => {
 
 // GET /api/donations/mine
 // Fetch donor history with optional status filtering
-exports.getMyDonations = async (req, res) => {
+// GET /api/donations
+// Fetch available donations with search and locality filters
+exports.getDonations = async (req, res) => {
   try {
-    const { status } = req.query;
-
-    const allowedStatuses = [
-      'available',
-      'claimed',
-      'collected',
-      'cancelled',
-    ];
-
-    if (status && !allowedStatuses.includes(status)) {
-      return res.status(400).json({
-        message: 'Invalid donation status filter.',
-        allowedStatuses,
-      });
-    }
+    const { search, locality } = req.query;
 
     const filter = {
-      donorId: req.user._id,
+      status: 'available',
+      pickupWindowEnd: { $gt: new Date() },
     };
 
-    if (status) {
-      filter.status = status;
+    // Search donations by title
+    if (search && search.trim()) {
+      filter.title = {
+        $regex: search.trim(),
+        $options: 'i',
+      };
+    }
+
+    // Filter donations by locality
+    if (locality && locality.trim()) {
+      filter['address.locality'] = {
+        $regex: locality.trim(),
+        $options: 'i',
+      };
     }
 
     const donations = await Donation.find(filter)
@@ -195,13 +196,13 @@ exports.getMyDonations = async (req, res) => {
       donations,
     });
   } catch (error) {
-    console.error('Fetch donor history error:', error);
+    console.error('Fetch donations error:', error);
+
     return res.status(500).json({
-      message: 'Unable to fetch your donation history.',
+      message: 'Unable to fetch donations.',
     });
   }
 };
-
 // GET /api/donations/:id
 // Pickup code visible only to the original donor
 exports.getDonationById = async (req, res) => {
