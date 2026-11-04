@@ -70,7 +70,7 @@ router.get(
   '/dashboard/donor',
   protect,
   authorizeRoles('donor'),
-  dashboardController.getDonorDashboard
+  dashboardController.getNgoDashboard
 );
 
 // --------------------------------------------------
