@@ -252,7 +252,9 @@ exports.getDonationById = async (req, res) => {
 
 // PATCH /api/donations/:id/cancel
 // Only the original donor can cancel a donation
-// Cancellation is allowed only before any portions are allocated
+
+
+
 exports.cancelDonation = async (req, res) => {
   try {
     const { id } = req.params;
@@ -260,29 +262,6 @@ exports.cancelDonation = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         message: 'Invalid donation ID.',
-      });
-    }
-
-    const donation = await Donation.findOneAndUpdate(
-      {
-        _id: id,
-        donorId: req.user._id,
-        status: 'available',
-        remainingPortions: { $eq: '$portions' },
-      },
-      {
-        $set: { status: 'cancelled' },
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-
-    if (donation) {
-      return res.status(200).json({
-        message: 'Donation cancelled successfully.',
-        donation,
       });
     }
 
@@ -297,9 +276,44 @@ exports.cancelDonation = async (req, res) => {
       });
     }
 
-    return res.status(409).json({
-      message:
-        'This donation cannot be cancelled because it may already have allocated portions or is no longer available.',
+    // Do not allow cancellation after any portions are allocated
+    if (
+      existingDonation.status !== 'available' ||
+      existingDonation.remainingPortions !== existingDonation.portions
+    ) {
+      return res.status(409).json({
+        message:
+          'This donation cannot be cancelled because portions may already have been allocated.',
+      });
+    }
+
+    // Conditional update prevents cancellation if allocation happens meanwhile
+    const donation = await Donation.findOneAndUpdate(
+      {
+        _id: id,
+        donorId: req.user._id,
+        status: 'available',
+        remainingPortions: existingDonation.portions,
+      },
+      {
+        $set: { status: 'cancelled' },
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    if (!donation) {
+      return res.status(409).json({
+        message:
+          'Donation status changed. Please refresh and try again.',
+      });
+    }
+
+    return res.status(200).json({
+      message: 'Donation cancelled successfully.',
+      donation,
     });
   } catch (error) {
     console.error('Cancel donation error:', error);
@@ -309,3 +323,5 @@ exports.cancelDonation = async (req, res) => {
     });
   }
 };
+
+// Cancellation is allowed only before any portions are allocated
