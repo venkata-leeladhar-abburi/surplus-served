@@ -1,3 +1,4 @@
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -59,6 +60,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: sessionListenable,
     redirect: (context, state) {
       final session = ref.read(sessionProvider);
+
       final loggingIn =
           state.matchedLocation == '/' ||
           state.matchedLocation == '/login' ||
@@ -68,19 +70,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (session == null) {
         return loggingIn ? null : '/';
       }
-      // Role guard (ARCHITECTURE.md §2): a donor can never land on a
-      // receiver route and vice versa, even via a deep link.
+
+      // Role guard: donors cannot access NGO routes and NGOs cannot
+      // access donor routes. The receiver route paths are retained
+      // internally for compatibility with the existing frontend.
       if (session.role == UserRole.donor &&
           state.matchedLocation.startsWith('/receiver')) {
         return '/donor';
       }
-      if (session.role == UserRole.receiver &&
+
+      if (session.role == UserRole.ngo &&
           state.matchedLocation.startsWith('/donor')) {
         return '/receiver';
       }
+
       if (loggingIn) {
         return session.role == UserRole.donor ? '/donor' : '/receiver';
       }
+
       return null;
     },
     routes: [
@@ -108,11 +115,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           return OtpScreen(args: args);
         },
       ),
-       GoRoute(
-  path: '/login',
-  name: 'login',
-  builder: (context, state) => const LoginScreen(),
-),
+      GoRoute(
+        path: '/login',
+        name: 'login',
+        builder: (context, state) => const LoginScreen(),
+      ),
 
       // Donor
       GoRoute(
@@ -155,7 +162,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // Receiver
+      // NGO (existing internal receiver routes)
       GoRoute(
         path: '/receiver',
         name: AppRoute.receiverFeed,
@@ -199,7 +206,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: AppRoute.receiverProfile,
             builder: (context, state) => const ProfileScreen(),
           ),
-         
         ],
       ),
     ],
