@@ -5,26 +5,82 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../../core/providers.dart';
+import '../../../allocation/domain/allocation.dart';
 import '../../../donation/domain/donation.dart';
 import '../../../donation/domain/donation_status.dart';
 
-final receiverDonationsProvider = StreamProvider<List<Donation>>((ref) {
+/// An NGO allocation together with its populated donation details.
+class ReceiverAllocation {
+  const ReceiverAllocation({
+    required this.allocation,
+    required this.donation,
+  });
+
+  final Allocation allocation;
+  final Donation donation;
+}
+
+/// Fetches approved allocations belonging to the logged-in NGO.
+///
+/// Unlike the old provider, this preserves the allocation ID and pickup code.
+final receiverAllocationsProvider =
+    FutureProvider<List<ReceiverAllocation>>((ref) async {
   final session = ref.watch(sessionProvider);
 
   if (session == null || session.token == null || session.token!.isEmpty) {
-    return Stream.error(Exception('Please log in to view your requests.'));
+    throw Exception('Please log in to view your requests.');
   }
 
-  return Stream.fromFuture(
-    _fetchMyAllocations(
+  final allocations = await _fetchMyAllocations(session.token!);
+
+  final results = <ReceiverAllocation>[];
+
+  for (final item in allocations) {
+    if (item['status']?.toString() != 'approved') continue;
+
+    final donationData = item['donationId'];
+
+    if (donationData is! Map) {
+      throw Exception(
+        'Donation details were not included in the allocation response.',
+      );
+    }
+
+    final allocation = Allocation.fromJson(item);
+
+    if (allocation.id.isEmpty || allocation.donationId.isEmpty) {
+      throw Exception('Invalid allocation information received.');
+    }
+
+    final donation = _buildDonation(
+      item,
+      Map<String, dynamic>.from(donationData),
       session.userId,
-      session.token!,
-    ),
+    );
+
+    results.add(
+      ReceiverAllocation(
+        allocation: allocation,
+        donation: donation,
+      ),
+    );
+  }
+
+  results.sort(
+    (a, b) => b.allocation.createdAt.compareTo(a.allocation.createdAt),
   );
+
+  return results;
 });
 
-Future<List<Donation>> _fetchMyAllocations(
-  String ngoId,
+/// Compatibility provider for existing screens that still expect donations.
+final receiverDonationsProvider = FutureProvider<List<Donation>>((ref) async {
+  final allocations = await ref.watch(receiverAllocationsProvider.future);
+
+  return allocations.map((item) => item.donation).toList();
+});
+
+Future<List<Map<String, dynamic>>> _fetchMyAllocations(
   String token,
 ) async {
   final response = await http.get(
@@ -37,7 +93,13 @@ Future<List<Donation>> _fetchMyAllocations(
     },
   ).timeout(const Duration(seconds: 20));
 
-  final decoded = jsonDecode(response.body);
+  dynamic decoded;
+
+  try {
+    decoded = jsonDecode(response.body);
+  } catch (_) {
+    throw Exception('Invalid response received from server.');
+  }
 
   if (response.statusCode != 200) {
     final message = decoded is Map
@@ -51,66 +113,47 @@ Future<List<Donation>> _fetchMyAllocations(
     throw Exception('Invalid allocations response from server.');
   }
 
-  final allocations = decoded['allocations'] as List;
+  return (decoded['allocations'] as List)
+      .whereType<Map>()
+      .map((item) => Map<String, dynamic>.from(item))
+      .toList();
+}
 
-  final donations = <Donation>[];
+Donation _buildDonation(
+  Map<String, dynamic> allocationData,
+  Map<String, dynamic> donationData,
+  String ngoId,
+) {
+  final addressData = donationData['address'];
 
-  for (final item in allocations) {
-    if (item is! Map) continue;
+  final address = addressData is Map
+      ? Map<String, dynamic>.from(addressData)
+      : <String, dynamic>{};
 
-    // Only approved allocations are currently awaiting pickup.
-    if (item['status']?.toString() != 'approved') continue;
+  final portions = _toInt(allocationData['allocatedPortions']);
 
-    final donationData = item['donationId'];
-
-    if (donationData is! Map) {
-      throw Exception(
-        'Donation details were not included in the allocation response.',
-      );
-    }
-
-    final donation = Map<String, dynamic>.from(donationData);
-    final addressData = donation['address'];
-
-    final address = addressData is Map
-        ? Map<String, dynamic>.from(addressData)
-        : <String, dynamic>{};
-
-    final portions = _toInt(item['allocatedPortions']);
-
-    if (portions <= 0) continue;
-
-    donations.add(
-      Donation(
-        id: donation['_id']?.toString() ?? '',
-        donorId: donation['donorId']?.toString() ?? '',
-        donorName: donation['donorName']?.toString() ?? 'Donor',
-        title: donation['title']?.toString() ?? 'Food donation',
-        description: donation['description']?.toString(),
-        portions: portions,
-        status: DonationStatus.allocated,
-        pickupWindowStart: _toDate(donation['pickupWindowStart']),
-        pickupWindowEnd: _toDate(donation['pickupWindowEnd']),
-        address: PickupAddress(
-          locality: address['locality']?.toString() ?? '',
-          exactLine: address['exactLine']?.toString(),
-          contactName: address['contactName']?.toString(),
-          contactPhone: address['contactPhone']?.toString(),
-          latitude: (address['latitude'] as num?)?.toDouble(),
-          longitude: (address['longitude'] as num?)?.toDouble(),
-        ),
-        createdAt: _toDate(item['createdAt']),
-        allocatedToNgoId: ngoId,
-        allocatedToNgoName: item['ngoName']?.toString(),
-      ),
-    );
-  }
-
-  donations.sort(
-    (a, b) => b.createdAt.compareTo(a.createdAt),
+  return Donation(
+    id: donationData['_id']?.toString() ?? '',
+    donorId: allocationData['donorId']?.toString() ?? '',
+    donorName: donationData['donorName']?.toString() ?? 'Donor',
+    title: donationData['title']?.toString() ?? 'Food donation',
+    description: donationData['description']?.toString(),
+    portions: portions,
+    status: DonationStatus.allocated,
+    pickupWindowStart: _toDate(donationData['pickupWindowStart']),
+    pickupWindowEnd: _toDate(donationData['pickupWindowEnd']),
+    address: PickupAddress(
+      locality: address['locality']?.toString() ?? '',
+      exactLine: address['exactLine']?.toString(),
+      contactName: address['contactName']?.toString(),
+      contactPhone: address['contactPhone']?.toString(),
+      latitude: (address['latitude'] as num?)?.toDouble(),
+      longitude: (address['longitude'] as num?)?.toDouble(),
+    ),
+    createdAt: _toDate(allocationData['createdAt']),
+    allocatedToNgoId: ngoId,
+    allocatedToNgoName: allocationData['ngoName']?.toString(),
   );
-
-  return donations;
 }
 
 int _toInt(dynamic value) {
