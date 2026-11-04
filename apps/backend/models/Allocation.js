@@ -95,4 +95,19 @@ allocationSchema.index({
   createdAt: 1,
 });
 
+allocationSchema.index(
+  { donationId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      status: {
+        $in: [
+          'awaiting_ngo_confirmation',
+          'pending_donor',
+        ],
+      },
+    },
+  }
+);
+
 module.exports = mongoose.model('Allocation', allocationSchema);
