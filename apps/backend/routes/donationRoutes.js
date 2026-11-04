@@ -12,7 +12,11 @@ const {
   authorizeRoles,
 } = require('../middleware/authMiddleware');
 
+// --------------------------------------------------
 // Donor routes
+// --------------------------------------------------
+
+// Create donation
 router.post(
   '/',
   protect,
@@ -21,6 +25,7 @@ router.post(
   donationController.createDonation
 );
 
+// Get donor's donations
 router.get(
   '/mine',
   protect,
@@ -28,6 +33,7 @@ router.get(
   donationController.getMyDonations
 );
 
+// Cancel donation
 router.patch(
   '/:id/cancel',
   protect,
@@ -35,36 +41,31 @@ router.patch(
   donationController.cancelDonation
 );
 
-// Receiver routes
-router.get(
-  '/',
-  protect,
-  authorizeRoles('receiver', 'ngo'),
-  donationController.getDonations
-);
-
-// Receiver allocation routes
-router.get(
-  '/my-allocations',
-  protect,
-  authorizeRoles('receiver', 'ngo'),
-  allocationController.getMyAllocations
-);
-
+// Donor approves NGO allocation
 router.post(
-  '/:id/request',
+  '/allocations/:allocationId/approve',
   protect,
-  authorizeRoles('receiver', 'ngo'),
-  allocationController.requestDonation
+  authorizeRoles('donor'),
+  allocationController.approveAllocation
 );
 
+// Donor rejects NGO allocation
 router.post(
-  '/:id/verify-pickup',
+  '/allocations/:allocationId/reject',
   protect,
-  authorizeRoles('receiver', 'ngo'),
+  authorizeRoles('donor'),
+  allocationController.rejectAllocation
+);
+
+// Donor verifies pickup code
+router.post(
+  '/allocations/:allocationId/verify-pickup',
+  protect,
+  authorizeRoles('donor'),
   allocationController.verifyPickupCode
 );
 
+// Donor dashboard
 router.get(
   '/dashboard/donor',
   protect,
@@ -72,25 +73,59 @@ router.get(
   dashboardController.getDonorDashboard
 );
 
+// --------------------------------------------------
+// Donation browsing routes
+// --------------------------------------------------
+
 router.get(
-  '/dashboard/receiver',
+  '/',
   protect,
-  authorizeRoles('receiver', 'ngo'),
-  dashboardController.getReceiverDashboard
+  authorizeRoles( 'ngo'),
+  donationController.getDonations
 );
 
 // Individual donation details
 router.get(
   '/:id',
   protect,
-  authorizeRoles('donor', 'receiver', 'ngo'),
+  authorizeRoles('donor',  'ngo'),
   donationController.getDonationById
 );
 
+// --------------------------------------------------
+// NGO-only allocation routes
+// --------------------------------------------------
 
+// NGO views its own allocations and pickup codes
+router.get(
+  '/my-allocations',
+  protect,
+  authorizeRoles('ngo'),
+  allocationController.getMyAllocations
+);
 
+// NGO requests donation
+router.post(
+  '/:id/request',
+  protect,
+  authorizeRoles('ngo'),
+  allocationController.requestDonation
+);
 
+// NGO accepts or rejects reduced quantity offer
+router.post(
+  '/allocations/:allocationId/confirm-offer',
+  protect,
+  authorizeRoles('ngo'),
+  allocationController.confirmOffer
+);
 
-
+// NGO dashboard
+router.get(
+  '/dashboard/receiver',
+  protect,
+  authorizeRoles( 'ngo'),
+  dashboardController.getReceiverDashboard
+);
 
 module.exports = router;
