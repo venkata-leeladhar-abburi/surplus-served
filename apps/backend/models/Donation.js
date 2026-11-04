@@ -8,41 +8,58 @@ const donationSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+
     donorName: {
       type: String,
       required: true,
     },
+
     title: {
       type: String,
       required: true,
       trim: true,
     },
+
     description: {
       type: String,
       trim: true,
       default: null,
     },
+
     imageUrl: {
-    type: String,
-    default: null,
+      type: String,
+      default: null,
     },
+
     imagePublicId: {
-    type: String,
-    default: null,
+      type: String,
+      default: null,
     },
+
+    // Original quantity posted by the donor
     portions: {
       type: Number,
       required: true,
       min: 1,
     },
+
+    // Quantity still available for allocation
+    remainingPortions: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
     pickupWindowStart: {
       type: Date,
       required: true,
     },
+
     pickupWindowEnd: {
       type: Date,
       required: true,
     },
+
     address: {
       locality: {
         type: String,
@@ -50,28 +67,11 @@ const donationSchema = new mongoose.Schema(
         trim: true,
       },
     },
+
     status: {
       type: String,
       enum: ['available', 'claimed', 'collected', 'cancelled'],
       default: 'available',
-    },
-    allocatedToNgoId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      default: null,
-    },
-    allocatedToNgoName: {
-      type: String,
-      default: null,
-    },
-    pickupCode: {
-      type: String,
-      default: null,
-      select: false,
-    },
-    collectedAt: {
-      type: Date,
-      default: null,
     },
   },
   { timestamps: true }
