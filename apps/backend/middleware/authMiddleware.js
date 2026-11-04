@@ -1,5 +1,6 @@
 
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 
 // Verify JWT and identify the logged-in user
@@ -29,16 +30,29 @@ const protect = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    // Validate JWT payload
+    if (
+      !decoded.id ||
+      !mongoose.Types.ObjectId.isValid(decoded.id) ||
+      !decoded.role
+    ) {
+      return res.status(401).json({
+        message: 'Invalid authentication token.',
+      });
+    }
+
+    // Fetch the latest user details from MongoDB
     const user = await User.findById(decoded.id).select('-password');
 
-    if (!user) {
+    if (!user || user.role !== decoded.role) {
       return res.status(401).json({
-        message: 'User account no longer exists.',
+        message: 'Invalid authentication token.',
       });
     }
 
     req.user = user;
     next();
+
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
@@ -73,4 +87,7 @@ const authorizeRoles = (...roles) => {
   };
 };
 
-module.exports = { protect, authorizeRoles };
+module.exports = {
+  protect,
+  authorizeRoles,
+};
