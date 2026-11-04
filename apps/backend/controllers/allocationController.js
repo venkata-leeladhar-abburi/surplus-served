@@ -1,6 +1,7 @@
 
 const crypto = require('crypto');
 const mongoose = require('mongoose');
+
 const Donation = require('../models/Donation');
 const Allocation = require('../models/Allocation');
 
@@ -9,7 +10,29 @@ const ACTIVE_STATUSES = [
   'pending_donor',
 ];
 
+const UNRESOLVED_NGO_STATUSES = [
+  'queued',
+  'awaiting_ngo_confirmation',
+  'pending_donor',
+  'approved',
+];
+
+// Serialize queue operations by writing to the same Donation document.
+// queueRevision must exist in the Donation schema.
+const acquireQueueLock = async (donationId, session) => {
+  const result = await Donation.updateOne(
+    { _id: donationId },
+    { $inc: { queueRevision: 1 } },
+    { session }
+  );
+
+  if (result.matchedCount !== 1) {
+    throw new Error('DONATION_NOT_FOUND');
+  }
+};
+
 // Activate the oldest queued request for a donation.
+// The transaction and queueRevision write serialize concurrent activations.
 const activateNextRequest = async (donationId) => {
   const session = await mongoose.startSession();
 
@@ -19,20 +42,40 @@ const activateNextRequest = async (donationId) => {
 
       if (!donation) return;
 
-      // Expire queued requests if the pickup window has ended
+      // Serialize all queue-processing operations for this donation.
+      await acquireQueueLock(donationId, session);
+
+      const currentDonation = await Donation.findById(donationId).session(
+        session
+      );
+
+      if (!currentDonation) return;
+
+      // Expire requests that can no longer be fulfilled.
       if (
-        donation.pickupWindowEnd <= new Date() ||
-        donation.remainingPortions <= 0
+        currentDonation.pickupWindowEnd <= new Date() ||
+        currentDonation.remainingPortions <= 0 ||
+        currentDonation.status !== 'available'
       ) {
         await Allocation.updateMany(
-          { donationId, status: 'queued' },
+          {
+            donationId,
+            status: {
+              $in: [
+                'queued',
+                'awaiting_ngo_confirmation',
+                'pending_donor',
+              ],
+            },
+          },
           { $set: { status: 'expired' } },
           { session }
         );
+
         return;
       }
 
-      // Do not activate another request while one is unresolved
+      // Do not activate another request while one is unresolved.
       const activeRequest = await Allocation.findOne({
         donationId,
         status: { $in: ACTIVE_STATUSES },
@@ -40,6 +83,7 @@ const activateNextRequest = async (donationId) => {
 
       if (activeRequest) return;
 
+      // FIFO: oldest request first.
       const nextRequest = await Allocation.findOne({
         donationId,
         status: 'queued',
@@ -49,7 +93,7 @@ const activateNextRequest = async (donationId) => {
 
       if (!nextRequest) return;
 
-      const available = donation.remainingPortions;
+      const available = currentDonation.remainingPortions;
 
       const offeredPortions = Math.min(
         nextRequest.requestedPortions,
@@ -83,6 +127,8 @@ const activateNextRequest = async (donationId) => {
 // POST /api/donations/:id/request
 // Only verified NGOs can request donations.
 exports.requestDonation = async (req, res) => {
+  const session = await mongoose.startSession();
+
   try {
     const { id } = req.params;
     const requestedPortions = Number(req.body.portions);
@@ -93,10 +139,7 @@ exports.requestDonation = async (req, res) => {
       });
     }
 
-    if (
-      !Number.isInteger(requestedPortions) ||
-      requestedPortions < 1
-    ) {
+    if (!Number.isInteger(requestedPortions) || requestedPortions < 1) {
       return res.status(400).json({
         message: 'Please enter a valid number of portions.',
       });
@@ -115,58 +158,55 @@ exports.requestDonation = async (req, res) => {
       });
     }
 
-    const donation = await Donation.findOne({
-      _id: id,
-      donorId: { $ne: ngo._id },
-      status: 'available',
-      remainingPortions: { $gt: 0 },
-      pickupWindowEnd: { $gt: new Date() },
-    });
+    let allocation;
 
-    if (!donation) {
-      return res.status(404).json({
-        message: 'Donation not found or no longer available.',
-      });
-    }
+    await session.withTransaction(async () => {
+      const donation = await Donation.findOne({
+        _id: id,
+        donorId: { $ne: ngo._id },
+        status: 'available',
+        remainingPortions: { $gt: 0 },
+        pickupWindowEnd: { $gt: new Date() },
+      }).session(session);
 
-    // Prevent duplicate unresolved requests by the same NGO
-    const existingRequest = await Allocation.findOne({
-      donationId: id,
-      ngoId: ngo._id,
-      status: {
-        $in: [
-          'queued',
-          'awaiting_ngo_confirmation',
-          'pending_donor',
-          'approved',
-        ],
-      },
-    });
+      if (!donation) {
+        throw new Error('DONATION_NOT_AVAILABLE');
+      }
 
-    if (existingRequest) {
-      return res.status(409).json({
-        message: 'You already have an active request for this donation.',
-        allocationId: existingRequest._id,
-        status: existingRequest.status,
-      });
-    }
+      // Serialize request creation for this donation.
+      await acquireQueueLock(donation._id, session);
 
-    const [allocation] = await Allocation.create([
-      {
+      // Prevent duplicate unresolved requests by the same NGO.
+      const existingRequest = await Allocation.findOne({
         donationId: donation._id,
-        donorId: donation.donorId,
         ngoId: ngo._id,
-        ngoName: ngo.ngoDetails?.organizationName || ngo.name,
-        requestedPortions,
-        status: 'queued',
-      },
-    ]);
+        status: { $in: UNRESOLVED_NGO_STATUSES },
+      }).session(session);
 
-    await activateNextRequest(donation._id);
+      if (existingRequest) {
+        throw new Error('DUPLICATE_NGO_REQUEST');
+      }
 
-    const updatedAllocation = await Allocation.findById(
-      allocation._id
-    );
+      const created = await Allocation.create(
+        [
+          {
+            donationId: donation._id,
+            donorId: donation.donorId,
+            ngoId: ngo._id,
+            ngoName: ngo.ngoDetails?.organizationName || ngo.name,
+            requestedPortions,
+            status: 'queued',
+          },
+        ],
+        { session }
+      );
+
+      allocation = created[0];
+    });
+
+    await activateNextRequest(id);
+
+    const updatedAllocation = await Allocation.findById(allocation._id);
 
     return res.status(201).json({
       message: 'Donation request submitted successfully.',
@@ -175,9 +215,23 @@ exports.requestDonation = async (req, res) => {
   } catch (error) {
     console.error('Donation request error:', error);
 
+    if (error.message === 'DONATION_NOT_AVAILABLE') {
+      return res.status(404).json({
+        message: 'Donation not found or no longer available.',
+      });
+    }
+
+    if (error.message === 'DUPLICATE_NGO_REQUEST') {
+      return res.status(409).json({
+        message: 'You already have an active request for this donation.',
+      });
+    }
+
     return res.status(500).json({
       message: 'Unable to submit donation request.',
     });
+  } finally {
+    await session.endSession();
   }
 };
 
@@ -200,6 +254,15 @@ exports.confirmOffer = async (req, res) => {
       });
     }
 
+    if (
+      req.user.role !== 'ngo' ||
+      req.user.ngoDetails?.verificationStatus !== 'verified'
+    ) {
+      return res.status(403).json({
+        message: 'Only verified NGOs can confirm offers.',
+      });
+    }
+
     const allocation = await Allocation.findOne({
       _id: allocationId,
       ngoId: req.user._id,
@@ -212,28 +275,6 @@ exports.confirmOffer = async (req, res) => {
       });
     }
 
-    if (accept) {
-      const updated = await Allocation.findOneAndUpdate(
-        {
-          _id: allocationId,
-          ngoId: req.user._id,
-          status: 'awaiting_ngo_confirmation',
-        },
-        {
-          $set: {
-            status: 'pending_donor',
-            ngoDecisionAt: new Date(),
-          },
-        },
-        { new: true }
-      );
-
-      return res.status(200).json({
-        message: 'Offer accepted. Waiting for donor approval.',
-        allocation: updated,
-      });
-    }
-
     const updated = await Allocation.findOneAndUpdate(
       {
         _id: allocationId,
@@ -242,17 +283,27 @@ exports.confirmOffer = async (req, res) => {
       },
       {
         $set: {
-          status: 'declined',
+          status: accept ? 'pending_donor' : 'declined',
           ngoDecisionAt: new Date(),
         },
       },
       { new: true }
     );
 
-    await activateNextRequest(allocation.donationId);
+    if (!updated) {
+      return res.status(409).json({
+        message: 'This offer has already been processed.',
+      });
+    }
+
+    if (!accept) {
+      await activateNextRequest(allocation.donationId);
+    }
 
     return res.status(200).json({
-      message: 'Offer declined. The next NGO will be considered.',
+      message: accept
+        ? 'Offer accepted. Waiting for donor approval.'
+        : 'Offer declined. The next NGO will be considered.',
       allocation: updated,
     });
   } catch (error) {
@@ -294,7 +345,11 @@ exports.approveAllocation = async (req, res) => {
 
       const quantity = allocation.offeredPortions;
 
-      // Atomic quantity deduction
+      if (!Number.isInteger(quantity) || quantity < 1) {
+        throw new Error('INVALID_OFFERED_QUANTITY');
+      }
+
+      // Atomically deduct the approved portions.
       const donation = await Donation.findOneAndUpdate(
         {
           _id: allocation.donationId,
@@ -318,7 +373,7 @@ exports.approveAllocation = async (req, res) => {
         throw new Error('INSUFFICIENT_PORTIONS');
       }
 
-      // If all portions are allocated, mark donation as claimed
+      // If all portions are allocated, mark the donation as claimed.
       if (donation.remainingPortions === 0) {
         await Donation.updateOne(
           { _id: donation._id },
@@ -327,7 +382,6 @@ exports.approveAllocation = async (req, res) => {
         );
       }
 
-      // Generate a unique six-digit pickup code for this allocation
       const pickupCode = String(crypto.randomInt(100000, 1000000));
 
       const updated = await Allocation.findOneAndUpdate(
@@ -357,7 +411,7 @@ exports.approveAllocation = async (req, res) => {
       approvedAllocation = updated;
     });
 
-    // Activate the next NGO only after approval is committed
+    // The approval transaction is committed before activating the next NGO.
     await activateNextRequest(approvedAllocation.donationId);
 
     return res.status(200).json({
@@ -375,6 +429,12 @@ exports.approveAllocation = async (req, res) => {
     if (error.message === 'ALLOCATION_NOT_PENDING') {
       return res.status(404).json({
         message: 'No pending allocation found for your donation.',
+      });
+    }
+
+    if (error.message === 'INVALID_OFFERED_QUANTITY') {
+      return res.status(400).json({
+        message: 'Invalid offered quantity.',
       });
     }
 
@@ -444,6 +504,12 @@ exports.rejectAllocation = async (req, res) => {
 // Only the owning NGO can retrieve its pickup codes.
 exports.getMyAllocations = async (req, res) => {
   try {
+    if (req.user.role !== 'ngo') {
+      return res.status(403).json({
+        message: 'Only NGOs can access their allocations.',
+      });
+    }
+
     const { status } = req.query;
 
     const allowedStatuses = [
@@ -475,7 +541,10 @@ exports.getMyAllocations = async (req, res) => {
 
     const allocations = await Allocation.find(filter)
       .select('+pickupCode')
-      .populate('donationId', 'title description imageUrl address pickupWindowStart pickupWindowEnd')
+      .populate(
+        'donationId',
+        'title description imageUrl address pickupWindowStart pickupWindowEnd'
+      )
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -494,6 +563,8 @@ exports.getMyAllocations = async (req, res) => {
 // POST /api/donations/allocations/:allocationId/verify-pickup
 // Only the original donor verifies the NGO's pickup code.
 exports.verifyPickupCode = async (req, res) => {
+  const session = await mongoose.startSession();
+
   try {
     const { allocationId } = req.params;
     const code = String(req.body.code || '').trim();
@@ -510,71 +581,82 @@ exports.verifyPickupCode = async (req, res) => {
       });
     }
 
-    const allocation = await Allocation.findOne({
-      _id: allocationId,
-      donorId: req.user._id,
-      status: 'approved',
-    }).select('+pickupCode');
+    let updatedAllocation = null;
 
-    if (!allocation) {
-      return res.status(404).json({
-        message: 'No active allocation found.',
-      });
-    }
-
-    if (allocation.pickupCode !== code) {
-      return res.status(400).json({
-        message: 'Incorrect pickup code.',
-      });
-    }
-
-    const updatedAllocation = await Allocation.findOneAndUpdate(
-      {
+    await session.withTransaction(async () => {
+      const allocation = await Allocation.findOne({
         _id: allocationId,
         donorId: req.user._id,
         status: 'approved',
-        pickupCode: code,
-      },
-      {
-        $set: {
-          status: 'collected',
-          collectedAt: new Date(),
-          pickupCode: null,
-        },
-      },
-      { new: true }
-    );
+      })
+        .select('+pickupCode')
+        .session(session);
 
-    if (!updatedAllocation) {
-      return res.status(409).json({
-        message: 'Allocation has already been collected or changed.',
-      });
-    }
-
-    // Mark the donation collected only when every allocated portion
-    // has been collected and no portions remain available.
-    const donation = await Donation.findById(
-      allocation.donationId
-    );
-
-    if (donation && donation.remainingPortions === 0) {
-      const otherApproved = await Allocation.exists({
-        donationId: donation._id,
-        status: 'approved',
-      });
-
-      if (!otherApproved) {
-        await Donation.updateOne(
-          {
-            _id: donation._id,
-            remainingPortions: 0,
-          },
-          {
-            $set: { status: 'collected' },
-          }
-        );
+      if (!allocation) {
+        throw new Error('ALLOCATION_NOT_ACTIVE');
       }
-    }
+
+      if (allocation.pickupCode !== code) {
+        throw new Error('INCORRECT_PICKUP_CODE');
+      }
+
+      const updated = await Allocation.findOneAndUpdate(
+        {
+          _id: allocationId,
+          donorId: req.user._id,
+          status: 'approved',
+          pickupCode: code,
+        },
+        {
+          $set: {
+            status: 'collected',
+            collectedAt: new Date(),
+            pickupCode: null,
+          },
+        },
+        {
+          new: true,
+          session,
+        }
+      );
+
+      if (!updated) {
+        throw new Error('ALLOCATION_ALREADY_PROCESSED');
+      }
+
+      // Serialize pickup completion checks for this donation.
+      await acquireQueueLock(allocation.donationId, session);
+
+      const donation = await Donation.findById(
+        allocation.donationId
+      ).session(session);
+
+      if (!donation) {
+        throw new Error('DONATION_NOT_FOUND');
+      }
+
+      if (donation.remainingPortions === 0) {
+        const otherApproved = await Allocation.exists({
+          donationId: donation._id,
+          status: 'approved',
+        }).session(session);
+
+        if (!otherApproved) {
+          await Donation.updateOne(
+            {
+              _id: donation._id,
+              remainingPortions: 0,
+            },
+            {
+              $set: { status: 'collected' },
+            },
+            { session }
+          );
+        }
+      }
+
+      updatedAllocation = updated;
+    });
 
     return res.status(200).json({
       message: 'Food collection confirmed successfully.',
@@ -589,8 +671,28 @@ exports.verifyPickupCode = async (req, res) => {
   } catch (error) {
     console.error('Pickup verification error:', error);
 
+    if (error.message === 'ALLOCATION_NOT_ACTIVE') {
+      return res.status(404).json({
+        message: 'No active allocation found.',
+      });
+    }
+
+    if (error.message === 'INCORRECT_PICKUP_CODE') {
+      return res.status(400).json({
+        message: 'Incorrect pickup code.',
+      });
+    }
+
+    if (error.message === 'ALLOCATION_ALREADY_PROCESSED') {
+      return res.status(409).json({
+        message: 'Allocation has already been collected or changed.',
+      });
+    }
+
     return res.status(500).json({
       message: 'Unable to verify pickup code.',
     });
+  } finally {
+    await session.endSession();
   }
 };
