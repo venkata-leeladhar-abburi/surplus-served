@@ -1,3 +1,4 @@
+
 import '../../../shared/fixtures/fixture_store.dart';
 import '../../donation/domain/donation.dart';
 import '../domain/allocation_repository.dart';
@@ -12,9 +13,8 @@ class AllocationRepositoryFixture implements AllocationRepository {
     required String donationId,
     required String ngoId,
     required String ngoName,
+    required int requestedPortions,
   }) async {
-    // Real backend: BullMQ `allocate` job over a PostGIS candidate set,
-    // pushed via Socket.IO/FCM (ARCHITECTURE.md §3). Fixture: synchronous.
     return _store.allocate(
       donationId: donationId,
       ngoId: ngoId,
@@ -23,11 +23,55 @@ class AllocationRepositoryFixture implements AllocationRepository {
   }
 
   @override
+  Future<void> confirmOffer({
+    required String allocationId,
+    required bool accept,
+  }) async {
+    throw UnsupportedError(
+      'Offer confirmation requires the backend repository.',
+    );
+  }
+
+  @override
+  Future<void> approveAllocation({
+    required String allocationId,
+  }) async {
+    throw UnsupportedError(
+      'Allocation approval requires the backend repository.',
+    );
+  }
+
+  @override
+  Future<void> rejectAllocation({
+    required String allocationId,
+  }) async {
+    throw UnsupportedError(
+      'Allocation rejection requires the backend repository.',
+    );
+  }
+
+  @override
+  Future<void> verifyPickupCode({
+    required String allocationId,
+    required String code,
+  }) async {
+    throw UnsupportedError(
+      'Pickup verification requires the backend repository.',
+    );
+  }
+
+  @override
   Future<CodeEntryResult> enterPickupCode({
     required String donationId,
     required String code,
   }) async {
-    final result = _store.enterPickupCode(donationId: donationId, code: code);
-    return result.matched ? CodeEntryResult.success : CodeEntryResult.wrongCode;
+    final result = _store.enterPickupCode(
+      donationId: donationId,
+      code: code,
+    );
+
+    return result.matched
+        ? CodeEntryResult.success
+        : CodeEntryResult.wrongCode;
   }
 }
