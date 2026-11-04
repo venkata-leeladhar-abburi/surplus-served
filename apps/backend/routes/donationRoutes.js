@@ -70,7 +70,7 @@ router.get(
   '/dashboard/donor',
   protect,
   authorizeRoles('donor'),
-  dashboardController.getNgoDashboard
+  dashboardController.getDonorDashboard
 );
 
 // --------------------------------------------------
@@ -126,7 +126,7 @@ router.get(
   '/dashboard/ngo',
   protect,
   authorizeRoles('ngo'),
-  dashboardController.getReceiverDashboard
+  dashboardController.getNgoDashboard
 );
 
 module.exports = router;
