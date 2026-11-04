@@ -1,4 +1,6 @@
+
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 
 import '../domain/donation.dart';
@@ -6,56 +8,107 @@ import '../domain/donation_status.dart';
 import '../domain/donation_repository.dart';
 
 class HttpDonationRepository implements DonationRepository {
-  HttpDonationRepository({http.Client? client}) : _client = client ?? http.Client();
+  HttpDonationRepository({http.Client? client})
+      : _client = client ?? http.Client();
 
   final http.Client _client;
-  static const String _baseUrl = 'https://surplus-served-backend.onrender.com/api/donations';
 
+  static const String _baseUrl =
+      'https://surplus-served-backend.onrender.com/api/donations';
+
+  Map<String, String> _headers(String? authToken) {
+    return {
+      'Content-Type': 'application/json',
+      if (authToken != null && authToken.isNotEmpty)
+        'Authorization': 'Bearer $authToken',
+    };
+  }
+
+  // Fetch donations created by the logged-in donor.
   @override
-  Stream<List<Donation>> watchDonorDonations(String donorId, {String? authToken}) async* {
+  Stream<List<Donation>> watchDonorDonations(
+    String donorId, {
+    String? authToken,
+  }) async* {
     try {
       final response = await _client.get(
-        Uri.parse('$_baseUrl?donorId=$donorId'),
-        headers: {
-          'Content-Type': 'application/json',
-          if (authToken != null) 'Authorization': 'Bearer $authToken',
-        },
+        Uri.parse('$_baseUrl/mine'),
+        headers: _headers(authToken),
       ).timeout(const Duration(seconds: 20));
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonList = jsonDecode(response.body);
-        final donations = jsonList.map((json) => _fromJson(json)).toList();
-        donations.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        final decoded = jsonDecode(response.body);
+
+        final List<dynamic> jsonList;
+
+        if (decoded is List) {
+          jsonList = decoded;
+        } else if (decoded is Map<String, dynamic> &&
+            decoded['donations'] is List) {
+          jsonList = decoded['donations'] as List<dynamic>;
+        } else {
+          throw Exception('Unexpected donations response from server.');
+        }
+
+        final donations = jsonList
+            .map((json) => _fromJson(
+                  Map<String, dynamic>.from(json as Map),
+                ))
+            .toList();
+
+        donations.sort(
+          (a, b) => b.createdAt.compareTo(a.createdAt),
+        );
+
         yield donations;
       } else {
-        throw Exception('Failed to load donor donations from server (${response.statusCode})');
+        throw Exception(
+          _getErrorMessage(response, 'Failed to load donor donations'),
+        );
       }
     } catch (e) {
-      throw Exception('Network error loading history: ${e.toString().replaceAll('Exception: ', '')}');
+      throw Exception(
+        'Network error loading history: '
+        '${e.toString().replaceAll('Exception: ', '')}',
+      );
     }
   }
 
+  // Fetch one donation by ID.
   @override
-  Future<Donation> getById(String id, {String? authToken}) async {
+  Future<Donation> getById(
+    String id, {
+    String? authToken,
+  }) async {
     try {
       final response = await _client.get(
         Uri.parse('$_baseUrl/$id'),
-        headers: {
-          'Content-Type': 'application/json',
-          if (authToken != null) 'Authorization': 'Bearer $authToken',
-        },
+        headers: _headers(authToken),
       ).timeout(const Duration(seconds: 20));
 
       if (response.statusCode == 200) {
-        return _fromJson(jsonDecode(response.body));
-      } else {
-        throw Exception('Failed to fetch donation details (${response.statusCode})');
+        final decoded = jsonDecode(response.body);
+
+        return _fromJson(
+          Map<String, dynamic>.from(
+            decoded is Map && decoded['donation'] is Map
+                ? decoded['donation'] as Map
+                : decoded as Map,
+          ),
+        );
       }
+
+      throw Exception(
+        _getErrorMessage(response, 'Failed to fetch donation details'),
+      );
     } catch (e) {
-      throw Exception('Network error: ${e.toString().replaceAll('Exception: ', '')}');
+      throw Exception(
+        'Network error: ${e.toString().replaceAll('Exception: ', '')}',
+      );
     }
   }
 
+  // Create a donation.
   @override
   Future<Donation> create({
     required String donorId,
@@ -71,10 +124,7 @@ class HttpDonationRepository implements DonationRepository {
     try {
       final response = await _client.post(
         Uri.parse(_baseUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          if (authToken != null) 'Authorization': 'Bearer $authToken',
-        },
+        headers: _headers(authToken),
         body: jsonEncode({
           'donorId': donorId,
           'donorName': donorName,
@@ -84,83 +134,115 @@ class HttpDonationRepository implements DonationRepository {
           'pickupWindowStart': pickupWindowStart.toIso8601String(),
           'pickupWindowEnd': pickupWindowEnd.toIso8601String(),
           'address': {
-            'locality': address.locality
-            
+            'locality': address.locality,
           },
         }),
-      ).timeout(const Duration(seconds: 30)); // Extended timeout for Render spin-up delays
+      ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        return _fromJson(jsonDecode(response.body));
-      } else {
-        String errorMessage = 'Failed to create donation';
-        try {
-          final errorBody = jsonDecode(response.body);
-          if (errorBody is Map && errorBody.containsKey('message')) {
-            errorMessage = errorBody['message'];
-          }
-        } catch (_) {
-          errorMessage = 'Server error (${response.statusCode})';
-        }
-        throw Exception(errorMessage);
+        final decoded = jsonDecode(response.body);
+
+        final donationData = decoded is Map &&
+                decoded['donation'] is Map
+            ? decoded['donation']
+            : decoded;
+
+        return _fromJson(
+          Map<String, dynamic>.from(donationData as Map),
+        );
       }
+
+      throw Exception(
+        _getErrorMessage(response, 'Failed to create donation'),
+      );
     } catch (e) {
-      throw Exception('Failed to create donation: ${e.toString().replaceAll('Exception: ', '')}');
+      throw Exception(
+        'Failed to create donation: '
+        '${e.toString().replaceAll('Exception: ', '')}',
+      );
     }
   }
 
+  // Cancel a donation.
   @override
-  Future<void> cancel(String id, {String? authToken}) async {
+  Future<void> cancel(
+    String id, {
+    String? authToken,
+  }) async {
     try {
       final response = await _client.patch(
         Uri.parse('$_baseUrl/$id/cancel'),
-        headers: {
-          'Content-Type': 'application/json',
-          if (authToken != null) 'Authorization': 'Bearer $authToken',
-        },
+        headers: _headers(authToken),
       ).timeout(const Duration(seconds: 20));
 
       if (response.statusCode != 200) {
-        throw Exception('Failed to cancel donation (${response.statusCode})');
+        throw Exception(
+          _getErrorMessage(response, 'Failed to cancel donation'),
+        );
       }
     } catch (e) {
-      throw Exception('Network error cancelling donation: ${e.toString().replaceAll('Exception: ', '')}');
+      throw Exception(
+        'Network error cancelling donation: '
+        '${e.toString().replaceAll('Exception: ', '')}',
+      );
     }
+  }
+
+  String _getErrorMessage(
+    http.Response response,
+    String fallbackMessage,
+  ) {
+    try {
+      final decoded = jsonDecode(response.body);
+
+      if (decoded is Map<String, dynamic>) {
+        return decoded['message']?.toString() ?? fallbackMessage;
+      }
+    } catch (_) {
+      // Use fallback message when the response is not valid JSON.
+    }
+
+    return '$fallbackMessage (${response.statusCode})';
   }
 
   Donation _fromJson(Map<String, dynamic> json) {
     final statusStr = json['status']?.toString().toLowerCase();
+
+    final addressJson = json['address'] is Map
+        ? Map<String, dynamic>.from(json['address'])
+        : <String, dynamic>{};
+
     return Donation(
-      id: json['_id'] ?? json['id'] ?? '',
-      donorId: json['donorId'] ?? '',
-      donorName: json['donorName'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'],
-      portions: json['portions'] ?? 0,
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      donorId: json['donorId']?.toString() ?? '',
+      donorName: json['donorName']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString(),
+      portions: (json['portions'] as num?)?.toInt() ?? 0,
       status: DonationStatus.values.firstWhere(
         (e) => e.name.toLowerCase() == statusStr,
         orElse: () => DonationStatus.values.first,
       ),
       pickupWindowStart: json['pickupWindowStart'] != null
-          ? DateTime.parse(json['pickupWindowStart'])
+          ? DateTime.parse(json['pickupWindowStart'].toString())
           : DateTime.now(),
       pickupWindowEnd: json['pickupWindowEnd'] != null
-          ? DateTime.parse(json['pickupWindowEnd'])
+          ? DateTime.parse(json['pickupWindowEnd'].toString())
           : DateTime.now().add(const Duration(hours: 2)),
       address: PickupAddress(
-        locality: json['address']?['locality'] ?? '',
-        exactLine: json['address']?['exactLine'],
-        contactName: json['address']?['contactName'],
-        contactPhone: json['address']?['contactPhone'],
-        latitude: json['address']?['latitude']?.toDouble(),
-        longitude: json['address']?['longitude']?.toDouble(),
+        locality: addressJson['locality']?.toString() ?? '',
+        exactLine: addressJson['exactLine']?.toString(),
+        contactName: addressJson['contactName']?.toString(),
+        contactPhone: addressJson['contactPhone']?.toString(),
+        latitude: (addressJson['latitude'] as num?)?.toDouble(),
+        longitude: (addressJson['longitude'] as num?)?.toDouble(),
       ),
       createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
+          ? DateTime.parse(json['createdAt'].toString())
           : DateTime.now(),
-      allocatedToNgoId: json['allocatedToNgoId'],
-      allocatedToNgoName: json['allocatedToNgoName'],
-      pickupCode: json['pickupCode'],
+      allocatedToNgoId: json['allocatedToNgoId']?.toString(),
+      allocatedToNgoName: json['allocatedToNgoName']?.toString(),
+      pickupCode: json['pickupCode']?.toString(),
     );
   }
 }
