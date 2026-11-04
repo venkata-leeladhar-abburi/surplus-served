@@ -1,6 +1,7 @@
 
 const mongoose = require('mongoose');
 const Donation = require('../models/Donation');
+const Allocation = require('../models/Allocation');
 const cloudinary = require('../config/cloudinary');
 
 // POST /api/donations
@@ -270,6 +271,8 @@ exports.getDonationById = async (req, res) => {
 // PATCH /api/donations/:id/cancel
 // Only the original donor can cancel a donation
 exports.cancelDonation = async (req, res) => {
+  const session = await mongoose.startSession();
+
   try {
     const { id } = req.params;
 
@@ -279,63 +282,118 @@ exports.cancelDonation = async (req, res) => {
       });
     }
 
-    const existingDonation = await Donation.findOne({
-      _id: id,
-      donorId: req.user._id,
+    let cancelledDonation = null;
+
+    await session.withTransaction(async () => {
+      const donation = await Donation.findOne({
+        _id: id,
+        donorId: req.user._id,
+      }).session(session);
+
+      if (!donation) {
+        throw new Error('DONATION_NOT_FOUND');
+      }
+
+      // Serialize cancellation with NGO request creation
+      const lockResult = await Donation.updateOne(
+        { _id: id },
+        { $inc: { queueRevision: 1 } },
+        { session }
+      );
+
+      if (lockResult.matchedCount !== 1) {
+        throw new Error('DONATION_NOT_FOUND');
+      }
+
+      // Check for unresolved NGO allocations
+      const activeAllocation = await Allocation.findOne({
+        donationId: id,
+        status: {
+          $in: [
+            'queued',
+            'awaiting_ngo_confirmation',
+            'pending_donor',
+            'approved',
+          ],
+        },
+      }).session(session);
+
+      if (activeAllocation) {
+        throw new Error('ACTIVE_ALLOCATIONS_EXIST');
+      }
+
+      // Do not allow cancellation after portions are allocated
+      if (
+        donation.status !== 'available' ||
+        donation.remainingPortions !== donation.portions
+      ) {
+        throw new Error('DONATION_ALREADY_ALLOCATED');
+      }
+
+      cancelledDonation = await Donation.findOneAndUpdate(
+        {
+          _id: id,
+          donorId: req.user._id,
+          status: 'available',
+          remainingPortions: donation.portions,
+        },
+        {
+          $set: {
+            status: 'cancelled',
+          },
+        },
+        {
+          new: true,
+          session,
+          runValidators: true,
+        }
+      );
+
+      if (!cancelledDonation) {
+        throw new Error('DONATION_STATUS_CHANGED');
+      }
     });
 
-    if (!existingDonation) {
+    return res.status(200).json({
+      message: 'Donation cancelled successfully.',
+      donation: cancelledDonation,
+    });
+
+  } catch (error) {
+    console.error('Cancel donation error:', error);
+
+    if (error.message === 'DONATION_NOT_FOUND') {
       return res.status(404).json({
         message: 'Donation not found or you are not its owner.',
       });
     }
 
-    // Do not allow cancellation after any portions are allocated
-    if (
-      existingDonation.status !== 'available' ||
-      existingDonation.remainingPortions !== existingDonation.portions
-    ) {
+    if (error.message === 'ACTIVE_ALLOCATIONS_EXIST') {
       return res.status(409).json({
         message:
-          'This donation cannot be cancelled because portions may already have been allocated.',
+          'This donation cannot be cancelled because NGO requests are being processed.',
       });
     }
 
-    // Conditional update prevents cancellation if allocation happens meanwhile
-    const donation = await Donation.findOneAndUpdate(
-      {
-        _id: id,
-        donorId: req.user._id,
-        status: 'available',
-        remainingPortions: existingDonation.portions,
-      },
-      {
-        $set: { status: 'cancelled' },
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
+    if (error.message === 'DONATION_ALREADY_ALLOCATED') {
+      return res.status(409).json({
+        message:
+          'This donation cannot be cancelled because portions have already been allocated.',
+      });
+    }
 
-    if (!donation) {
+    if (error.message === 'DONATION_STATUS_CHANGED') {
       return res.status(409).json({
         message:
           'Donation status changed. Please refresh and try again.',
       });
     }
 
-    return res.status(200).json({
-      message: 'Donation cancelled successfully.',
-      donation,
-    });
-  } catch (error) {
-    console.error('Cancel donation error:', error);
-
     return res.status(500).json({
       message: 'Unable to cancel donation.',
     });
+
+  } finally {
+    await session.endSession();
   }
 };
-
-// Cancellation is allowed only before any portions are allocated.
