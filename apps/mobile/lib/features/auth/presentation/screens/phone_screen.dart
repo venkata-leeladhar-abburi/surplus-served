@@ -47,45 +47,51 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
     return true;
   }
 
-  Future<void> _pickCertificate() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-      );
+  
+Future<void> _pickCertificate() async {
+  try {
+    final file = await FilePicker.pickFile(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+    );
 
-      if (result == null) return;
+    if (file == null) return;
 
-      final file = result.files.single;
+    final fileSize = file.lengthSync() ?? await file.length();
 
-      if (file.size > 5 * 1024 * 1024) {
-        if (!mounted) return;
+    if (fileSize == null) {
+      throw Exception('Unable to determine the selected file size.');
+    }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Certificate must be 5 MB or smaller.'),
-          ),
-        );
-        return;
-      }
-
-      if (file.path == null) {
-        throw Exception('Unable to access the selected file.');
-      }
-
-      setState(() {
-        _certificatePath = file.path;
-        _certificateName = file.name;
-        _hasError = false;
-      });
-    } catch (e) {
+    if (fileSize > 5 * 1024 * 1024) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to select certificate: $e')),
+        const SnackBar(
+          content: Text('Certificate must be 5 MB or smaller.'),
+        ),
       );
+      return;
     }
+
+    if (file.path == null) {
+      throw Exception('Unable to access the selected file.');
+    }
+
+    setState(() {
+      _certificatePath = file.path;
+      _certificateName = file.name;
+      _hasError = false;
+    });
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Unable to select certificate: $e')),
+    );
   }
+}
+
 
   void _proceedToPassword() {
     if (!_isValid) {
