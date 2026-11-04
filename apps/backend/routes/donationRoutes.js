@@ -33,6 +33,14 @@ router.get(
   donationController.getMyDonations
 );
 
+// Get donor's allocations
+router.get(
+  '/my-donor-allocations',
+  protect,
+  authorizeRoles('donor'),
+  allocationController.getMyDonorAllocations
+);
+
 // Donor dashboard
 router.get(
   '/dashboard/donor',
