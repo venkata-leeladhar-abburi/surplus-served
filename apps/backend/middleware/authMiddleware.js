@@ -50,9 +50,23 @@ const protect = async (req, res, next) => {
       });
     }
 
+    // Block NGOs until admin approval
+    if (
+      user.role === 'ngo' &&
+      user.ngoDetails?.verificationStatus !== 'approved'
+    ) {
+      return res.status(403).json({
+        message:
+          user.ngoDetails?.verificationStatus === 'rejected'
+            ? 'Your NGO registration was rejected. Please contact the administrator.'
+            : 'Your NGO account is awaiting admin approval.',
+        verificationStatus:
+          user.ngoDetails?.verificationStatus || 'pending',
+      });
+    }
+
     req.user = user;
     next();
-
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
