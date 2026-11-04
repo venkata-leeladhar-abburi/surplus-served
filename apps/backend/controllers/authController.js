@@ -53,7 +53,7 @@ const registerUser = async (req, res) => {
       });
     }
 
-    if (!['donor',  'ngo'].includes(role)) {
+    if (!['donor', 'ngo'].includes(role)) {
       return res.status(400).json({
         message: 'Invalid role.',
       });
@@ -221,6 +221,35 @@ const loginUser = async (req, res) => {
       return res.status(401).json({
         message: 'Invalid email or password.',
       });
+    }
+
+    // Check NGO verification before issuing an authentication token
+    if (user.role === 'ngo') {
+      const verificationStatus =
+        user.ngoDetails?.verificationStatus || 'pending';
+
+      if (verificationStatus === 'pending') {
+        return res.status(403).json({
+          message: 'Your NGO account is awaiting admin approval.',
+          verificationStatus: 'pending',
+        });
+      }
+
+      if (verificationStatus === 'rejected') {
+        return res.status(403).json({
+          message:
+            'Your NGO registration was rejected. Please contact the administrator.',
+          verificationStatus: 'rejected',
+          rejectionReason: user.ngoDetails?.rejectionReason || null,
+        });
+      }
+
+      if (verificationStatus !== 'approved') {
+        return res.status(403).json({
+          message: 'Your NGO account is not approved.',
+          verificationStatus,
+        });
+      }
     }
 
     const token = generateToken(user._id, user.role);
