@@ -1,6 +1,7 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
@@ -53,20 +54,35 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
         allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
       );
 
-      if (result != null && result.files.single.path != null) {
-        setState(() {
-          _certificatePath = result.files.single.path;
-          _certificateName = result.files.single.name;
-          _hasError = false;
-        });
+      if (result == null) return;
+
+      final file = result.files.single;
+
+      if (file.size > 5 * 1024 * 1024) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Certificate must be 5 MB or smaller.'),
+          ),
+        );
+        return;
       }
+
+      if (file.path == null) {
+        throw Exception('Unable to access the selected file.');
+      }
+
+      setState(() {
+        _certificatePath = file.path;
+        _certificateName = file.name;
+        _hasError = false;
+      });
     } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Unable to select certificate: $e'),
-        ),
+        SnackBar(content: Text('Unable to select certificate: $e')),
       );
     }
   }
@@ -107,10 +123,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
 
     return Scaffold(
       backgroundColor: c.background,
-      appBar: AppBar(
-        backgroundColor: c.background,
-        elevation: 0,
-      ),
+      appBar: AppBar(backgroundColor: c.background, elevation: 0),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -127,7 +140,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                   const SizedBox(height: SsSpacing.sm),
                   Text(
                     _isNgo
-                        ? 'Enter your contact and organization details to register your NGO.'
+                        ? 'Enter your contact and organization details to get started.'
                         : 'Enter your name and email to get started.',
                     style: SsTypeScale.body.copyWith(
                       color: c.onSurfaceVariant,
@@ -162,7 +175,6 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
 
                   if (_isNgo) ...[
                     const SizedBox(height: SsSpacing.md),
-
                     SsTextField(
                       label: 'Organization Name',
                       controller: _organizationController,
@@ -174,7 +186,6 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                     ),
 
                     const SizedBox(height: SsSpacing.md),
-
                     SsTextField(
                       label: 'Registration Number',
                       controller: _registrationController,
@@ -186,7 +197,6 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                     ),
 
                     const SizedBox(height: SsSpacing.md),
-
                     OutlinedButton.icon(
                       onPressed: _pickCertificate,
                       icon: const Icon(Icons.upload_file),
@@ -207,7 +217,6 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                     ],
 
                     const SizedBox(height: SsSpacing.xs),
-
                     Text(
                       'Accepted formats: PDF, JPG and PNG (maximum 5 MB).',
                       style: SsTypeScale.small.copyWith(
@@ -217,7 +226,6 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                   ],
 
                   const SizedBox(height: SsSpacing.xl),
-
                   SsButton.primary(
                     label: 'Continue',
                     expand: true,
