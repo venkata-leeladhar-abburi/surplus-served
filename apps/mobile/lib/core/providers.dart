@@ -1,4 +1,3 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/allocation/data/allocation_repository_fixture.dart';
@@ -6,7 +5,7 @@ import '../features/allocation/domain/allocation_repository.dart';
 import '../features/auth/data/http_auth_repository.dart';
 import '../features/auth/domain/auth_repository.dart';
 import '../features/auth/domain/session.dart';
-import '../features/discovery/data/discovery_repository_fixture.dart';
+import '../features/discovery/data/http_discovery_repository.dart';
 import '../features/discovery/domain/discovery_repository.dart';
 import '../features/donation/data/http_donation_repository.dart';
 import '../features/donation/domain/donation_repository.dart';
@@ -24,9 +23,13 @@ final donationRepositoryProvider = Provider<DonationRepository>(
   (ref) => HttpDonationRepository(),
 );
 
-final discoveryRepositoryProvider = Provider<DiscoveryRepository>(
-  (ref) => DiscoveryRepositoryFixture(ref.watch(fixtureStoreProvider)),
-);
+final discoveryRepositoryProvider = Provider<DiscoveryRepository>((ref) {
+  final session = ref.watch(sessionProvider);
+
+  return HttpDiscoveryRepository(
+    authToken: session?.token,
+  );
+});
 
 final allocationRepositoryProvider = Provider<AllocationRepository>(
   (ref) => AllocationRepositoryFixture(ref.watch(fixtureStoreProvider)),
