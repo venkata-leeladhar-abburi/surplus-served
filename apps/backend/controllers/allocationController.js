@@ -504,11 +504,14 @@ exports.rejectAllocation = async (req, res) => {
 // Only the owning NGO can retrieve its pickup codes.
 exports.getMyAllocations = async (req, res) => {
   try {
-    if (req.user.role !== 'ngo') {
-      return res.status(403).json({
-        message: 'Only NGOs can access their allocations.',
-      });
-    }
+    if (
+  req.user.role !== 'ngo' ||
+  req.user.ngoDetails?.verificationStatus !== 'verified'
+) {
+  return res.status(403).json({
+    message: 'Only verified NGOs can access their allocations.',
+  });
+}
 
     const { status } = req.query;
 
