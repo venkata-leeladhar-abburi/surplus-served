@@ -99,6 +99,10 @@ exports.createDonation = async (req, res) => {
           ? description.trim()
           : null,
       portions: parsedPortions,
+
+      // Initially, all portions are available
+      remainingPortions: parsedPortions,
+
       pickupWindowStart: start,
       pickupWindowEnd: end,
       address: {
@@ -139,10 +143,10 @@ exports.getDonations = async (req, res) => {
 
     const filter = {
       status: 'available',
+      remainingPortions: { $gt: 0 },
       pickupWindowEnd: { $gt: new Date() },
     };
 
-    // Search donations by title
     if (search && search.trim()) {
       filter.title = {
         $regex: search.trim(),
@@ -150,7 +154,6 @@ exports.getDonations = async (req, res) => {
       };
     }
 
-    // Filter donations by locality
     if (locality && locality.trim()) {
       filter['address.locality'] = {
         $regex: locality.trim(),
@@ -218,7 +221,7 @@ exports.getMyDonations = async (req, res) => {
 };
 
 // GET /api/donations/:id
-// Pickup code visible only to the original donor
+// Fetch donation details without exposing pickup codes
 exports.getDonationById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -229,19 +232,12 @@ exports.getDonationById = async (req, res) => {
       });
     }
 
-    let donation = await Donation.findById(id);
+    const donation = await Donation.findById(id);
 
     if (!donation) {
       return res.status(404).json({
         message: 'Donation not found.',
       });
-    }
-
-    if (
-      req.user.role === 'donor' &&
-      String(donation.donorId) === String(req.user._id)
-    ) {
-      donation = await Donation.findById(id).select('+pickupCode');
     }
 
     return res.status(200).json(donation);
@@ -255,7 +251,8 @@ exports.getDonationById = async (req, res) => {
 };
 
 // PATCH /api/donations/:id/cancel
-// Only the original donor can cancel available donations
+// Only the original donor can cancel a donation
+// Cancellation is allowed only before any portions are allocated
 exports.cancelDonation = async (req, res) => {
   try {
     const { id } = req.params;
@@ -271,6 +268,7 @@ exports.cancelDonation = async (req, res) => {
         _id: id,
         donorId: req.user._id,
         status: 'available',
+        remainingPortions: { $eq: '$portions' },
       },
       {
         $set: { status: 'cancelled' },
@@ -300,7 +298,8 @@ exports.cancelDonation = async (req, res) => {
     }
 
     return res.status(409).json({
-      message: 'Only available donations can be cancelled.',
+      message:
+        'This donation cannot be cancelled because it may already have allocated portions or is no longer available.',
     });
   } catch (error) {
     console.error('Cancel donation error:', error);
