@@ -33,6 +33,14 @@ router.get(
   donationController.getMyDonations
 );
 
+// Donor dashboard
+router.get(
+  '/dashboard/donor',
+  protect,
+  authorizeRoles('donor'),
+  dashboardController.getDonorDashboard
+);
+
 // Cancel donation
 router.patch(
   '/:id/cancel',
@@ -65,37 +73,17 @@ router.post(
   allocationController.verifyPickupCode
 );
 
-// Donor dashboard
-router.get(
-  '/dashboard/donor',
-  protect,
-  authorizeRoles('donor'),
-  dashboardController.getDonorDashboard
-);
-
 // --------------------------------------------------
-// NGO donation browsing routes
+// NGO routes
 // --------------------------------------------------
 
-// Only NGOs can browse donations
+// NGO dashboard
 router.get(
-  '/',
+  '/dashboard/ngo',
   protect,
   authorizeRoles('ngo'),
-  donationController.getDonations
+  dashboardController.getNgoDashboard
 );
-
-// Individual donation details
-router.get(
-  '/:id',
-  protect,
-  authorizeRoles('donor', 'ngo'),
-  donationController.getDonationById
-);
-
-// --------------------------------------------------
-// NGO allocation routes
-// --------------------------------------------------
 
 // NGO views its own allocations and pickup codes
 router.get(
@@ -121,12 +109,24 @@ router.post(
   allocationController.confirmOffer
 );
 
-// NGO dashboard
+// Only NGOs can browse donations
 router.get(
-  '/dashboard/ngo',
+  '/',
   protect,
   authorizeRoles('ngo'),
-  dashboardController.getNgoDashboard
+  donationController.getDonations
+);
+
+// --------------------------------------------------
+// Individual donation details
+// Keep this dynamic route after specific GET routes.
+// --------------------------------------------------
+
+router.get(
+  '/:id',
+  protect,
+  authorizeRoles('donor', 'ngo'),
+  donationController.getDonationById
 );
 
 module.exports = router;
