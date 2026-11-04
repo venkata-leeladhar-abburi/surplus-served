@@ -24,6 +24,50 @@ class HttpDonationRepository implements DonationRepository {
     };
   }
 
+  // Convert backend statuses into frontend domain statuses.
+  DonationStatus _mapStatus(dynamic status) {
+    switch (status?.toString().toLowerCase()) {
+      case 'available':
+        return DonationStatus.live;
+
+      case 'claimed':
+        return DonationStatus.allocated;
+
+      case 'collected':
+        return DonationStatus.collected;
+
+      case 'cancelled':
+        return DonationStatus.cancelled;
+
+      // Support frontend statuses if the API returns them.
+      case 'draft':
+        return DonationStatus.draft;
+
+      case 'pendingcheck':
+        return DonationStatus.pendingCheck;
+
+      case 'live':
+        return DonationStatus.live;
+
+      case 'allocated':
+        return DonationStatus.allocated;
+
+      case 'reallocated':
+        return DonationStatus.reallocated;
+
+      case 'unfulfilled':
+        return DonationStatus.unfulfilled;
+
+      case 'rejected':
+        return DonationStatus.rejected;
+
+      default:
+        throw FormatException(
+          'Unknown donation status received from server: $status',
+        );
+    }
+  }
+
   // Fetch donations created by the logged-in donor.
   @override
   Stream<List<Donation>> watchDonorDonations(
@@ -51,9 +95,11 @@ class HttpDonationRepository implements DonationRepository {
         }
 
         final donations = jsonList
-            .map((json) => _fromJson(
-                  Map<String, dynamic>.from(json as Map),
-                ))
+            .map(
+              (json) => _fromJson(
+                Map<String, dynamic>.from(json as Map),
+              ),
+            )
             .toList();
 
         donations.sort(
@@ -89,12 +135,13 @@ class HttpDonationRepository implements DonationRepository {
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
 
+        final donationData = decoded is Map &&
+                decoded['donation'] is Map
+            ? decoded['donation']
+            : decoded;
+
         return _fromJson(
-          Map<String, dynamic>.from(
-            decoded is Map && decoded['donation'] is Map
-                ? decoded['donation'] as Map
-                : decoded as Map,
-          ),
+          Map<String, dynamic>.from(donationData as Map),
         );
       }
 
@@ -206,8 +253,6 @@ class HttpDonationRepository implements DonationRepository {
   }
 
   Donation _fromJson(Map<String, dynamic> json) {
-    final statusStr = json['status']?.toString().toLowerCase();
-
     final addressJson = json['address'] is Map
         ? Map<String, dynamic>.from(json['address'])
         : <String, dynamic>{};
@@ -219,10 +264,7 @@ class HttpDonationRepository implements DonationRepository {
       title: json['title']?.toString() ?? '',
       description: json['description']?.toString(),
       portions: (json['portions'] as num?)?.toInt() ?? 0,
-      status: DonationStatus.values.firstWhere(
-        (e) => e.name.toLowerCase() == statusStr,
-        orElse: () => DonationStatus.values.first,
-      ),
+      status: _mapStatus(json['status']),
       pickupWindowStart: json['pickupWindowStart'] != null
           ? DateTime.parse(json['pickupWindowStart'].toString())
           : DateTime.now(),
