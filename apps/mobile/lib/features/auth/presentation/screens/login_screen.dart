@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import 'package:ss_design_system/ss_design_system.dart';
 
 import '../../../../core/providers.dart';
 import '../../../../shared/widgets/connectivity_banner.dart';
+import '../../domain/user_role.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -16,6 +18,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
   bool _loading = false;
   bool _hasError = false;
   String _errorMessage = 'Invalid email or password';
@@ -25,6 +28,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _passwordController.text.length >= 6;
 
   Future<void> _handleLogin() async {
+    if (!_isValid || _loading) return;
+
     setState(() {
       _loading = true;
       _hasError = false;
@@ -33,38 +38,76 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       final session = await ref.read(authRepositoryProvider).login(
             email: _emailController.text.trim(),
-            password: _passwordController.text.trim(),
+            password: _passwordController.text,
           );
 
-      ref.read(sessionProvider.notifier).signIn(session);
-    } catch (e) {
-      final msg = e.toString().replaceAll('Exception: ', '');
       if (!mounted) return;
 
-      // Unregistered user -> send them to the sign-up flow
+      ref.read(sessionProvider.notifier).signIn(session);
+
+      switch (session.role) {
+        case UserRole.donor:
+          context.go('/donor');
+          break;
+
+        case UserRole.ngo:
+          context.go('/receiver');
+          break;
+
+        case UserRole.admin:
+          // Admin dashboard navigation will be integrated separately.
+          context.go('/login');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Admin login successful. Admin dashboard integration is pending.',
+              ),
+            ),
+          );
+          break;
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      final msg = e.toString().replaceAll('Exception: ', '');
+
       if (msg.contains('No account found')) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No account found. Please register.')),
+          const SnackBar(
+            content: Text('No account found. Please register.'),
+          ),
         );
         context.goNamed('roleSelect');
-        return;
+      } else {
+        setState(() {
+          _hasError = true;
+          _errorMessage = msg;
+        });
       }
-
-      setState(() {
-        _hasError = true;
-        _errorMessage = msg;
-      });
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final c = context.ssColors;
+
     return Scaffold(
       backgroundColor: c.background,
-      appBar: AppBar(backgroundColor: c.background, elevation: 0),
+      appBar: AppBar(
+        backgroundColor: c.background,
+        elevation: 0,
+      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -81,7 +124,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: SsSpacing.sm),
                   Text(
                     'Log in with your email and password.',
-                    style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
+                    style: SsTypeScale.body.copyWith(
+                      color: c.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: SsSpacing.xl),
                   SsTextField(
