@@ -61,6 +61,40 @@ class HttpAllocationRepository implements AllocationRepository {
     throw Exception(message);
   }
 
+  // Fetch allocations belonging to the logged-in donor.
+  Future<List<Map<String, dynamic>>> getMyDonorAllocations() async {
+    final response = await _client
+        .get(
+          Uri.parse('$_baseUrl/my-donor-allocations'),
+          headers: _headers,
+        )
+        .timeout(const Duration(seconds: 20));
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      String message = 'Unable to fetch your allocations.';
+
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map) {
+          message = decoded['message']?.toString() ?? message;
+        }
+      } catch (_) {}
+
+      throw Exception(message);
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    if (decoded is! Map || decoded['allocations'] is! List) {
+      throw Exception('Invalid allocations response from server.');
+    }
+
+    return (decoded['allocations'] as List)
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+  }
+
   @override
   Future<Donation> requestDonation({
     required String donationId,
@@ -79,7 +113,6 @@ class HttpAllocationRepository implements AllocationRepository {
       },
     );
 
-    // Fetch the latest donation after submitting the request.
     return HttpDonationRepository().getById(
       donationId,
       authToken: authToken,
