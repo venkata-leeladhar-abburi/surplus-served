@@ -139,15 +139,14 @@ exports.createDonation = async (req, res) => {
 // Fetch available donations with search and locality filters
 exports.getDonations = async (req, res) => {
   try {
+    // Only verified NGOs can browse donations
+    if (req.user.ngoDetails?.verificationStatus !== 'verified') {
+      return res.status(403).json({
+        message: 'Your NGO account is not verified.',
+      });
+    }
+
     const { search, locality } = req.query;
-    if (
-  req.user.role === 'ngo' &&
-  req.user.ngoDetails?.verificationStatus !== 'verified'
-) {
-  return res.status(403).json({
-    message: 'Your NGO account is not verified.',
-  });
-}
 
     const filter = {
       status: 'available',
@@ -232,6 +231,16 @@ exports.getMyDonations = async (req, res) => {
 // Fetch donation details without exposing pickup codes
 exports.getDonationById = async (req, res) => {
   try {
+    // Only verified NGOs can access donation details
+    if (
+      req.user.role === 'ngo' &&
+      req.user.ngoDetails?.verificationStatus !== 'verified'
+    ) {
+      return res.status(403).json({
+        message: 'Your NGO account is not verified.',
+      });
+    }
+
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -260,9 +269,6 @@ exports.getDonationById = async (req, res) => {
 
 // PATCH /api/donations/:id/cancel
 // Only the original donor can cancel a donation
-
-
-
 exports.cancelDonation = async (req, res) => {
   try {
     const { id } = req.params;
@@ -332,4 +338,4 @@ exports.cancelDonation = async (req, res) => {
   }
 };
 
-// Cancellation is allowed only before any portions are allocated
+// Cancellation is allowed only before any portions are allocated.
