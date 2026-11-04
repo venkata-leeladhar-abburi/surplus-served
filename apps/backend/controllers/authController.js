@@ -2,6 +2,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const cloudinary = require('../config/cloudinary');
 
 // Generate JWT Token
 const generateToken = (id, role) => {
@@ -17,9 +18,9 @@ const generateToken = (id, role) => {
 };
 
 // Register User
-
 const registerUser = async (req, res) => {
   let uploadedDocumentPublicId = null;
+  let uploadedDocumentResourceType = 'image';
 
   try {
     const { password, role } = req.body;
@@ -62,14 +63,18 @@ const registerUser = async (req, res) => {
 
     if (role === 'ngo') {
       const organizationName =
-        typeof req.body.ngoDetails?.organizationName === 'string'
-          ? req.body.ngoDetails.organizationName.trim()
-          : '';
+        typeof req.body.organizationName === 'string'
+          ? req.body.organizationName.trim()
+          : typeof req.body.ngoDetails?.organizationName === 'string'
+            ? req.body.ngoDetails.organizationName.trim()
+            : '';
 
       const registrationNumber =
-        typeof req.body.ngoDetails?.registrationNumber === 'string'
-          ? req.body.ngoDetails.registrationNumber.trim()
-          : '';
+        typeof req.body.registrationNumber === 'string'
+          ? req.body.registrationNumber.trim()
+          : typeof req.body.ngoDetails?.registrationNumber === 'string'
+            ? req.body.ngoDetails.registrationNumber.trim()
+            : '';
 
       if (!organizationName || !registrationNumber) {
         return res.status(400).json({
@@ -102,11 +107,16 @@ const registerUser = async (req, res) => {
 
     // Upload NGO certificate to Cloudinary
     if (role === 'ngo') {
+      uploadedDocumentResourceType =
+        req.file.mimetype === 'application/pdf'
+          ? 'raw'
+          : 'image';
+
       const uploadResult = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
             folder: 'surplus-served/ngo-certificates',
-            resource_type: 'auto',
+            resource_type: uploadedDocumentResourceType,
           },
           (error, result) => {
             if (error) {
@@ -152,55 +162,18 @@ const registerUser = async (req, res) => {
       token,
     });
   } catch (error) {
-    // Delete uploaded certificate if registration fails
+    // Remove uploaded certificate if registration fails
     if (uploadedDocumentPublicId) {
       try {
         await cloudinary.uploader.destroy(
           uploadedDocumentPublicId,
-          { resource_type: 'image' }
+          { resource_type: uploadedDocumentResourceType }
         );
       } catch (cleanupError) {
         console.error('Certificate cleanup error:', cleanupError);
       }
     }
 
-    console.error('Registration error:', error);
-
-    return res.status(500).json({
-      message: 'Registration failed. Please try again.',
-    });
-  }
-};
-
-    const userExists = await User.findOne({ email });
-
-    if (userExists) {
-      return res.status(409).json({
-        message: 'User already exists.',
-      });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      role,
-      ngoDetails,
-    });
-
-    const token = generateToken(user._id, user.role);
-
-    return res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      ngoDetails: user.ngoDetails,
-      token,
-    });
-  } catch (error) {
     if (error.code === 11000) {
       return res.status(409).json({
         message: 'User already exists.',
@@ -257,7 +230,14 @@ const loginUser = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      ngoDetails: user.ngoDetails,
+      ngoDetails: user.ngoDetails
+        ? {
+            organizationName: user.ngoDetails.organizationName,
+            registrationNumber: user.ngoDetails.registrationNumber,
+            verificationStatus: user.ngoDetails.verificationStatus,
+            rejectionReason: user.ngoDetails.rejectionReason,
+          }
+        : undefined,
       token,
     });
   } catch (error) {
@@ -277,7 +257,14 @@ const getMe = async (req, res) => {
       name: req.user.name,
       email: req.user.email,
       role: req.user.role,
-      ngoDetails: req.user.ngoDetails,
+      ngoDetails: req.user.ngoDetails
+        ? {
+            organizationName: req.user.ngoDetails.organizationName,
+            registrationNumber: req.user.ngoDetails.registrationNumber,
+            verificationStatus: req.user.ngoDetails.verificationStatus,
+            rejectionReason: req.user.ngoDetails.rejectionReason,
+          }
+        : undefined,
       createdAt: req.user.createdAt,
     });
   } catch (error) {
@@ -289,13 +276,11 @@ const getMe = async (req, res) => {
   }
 };
 
-
 // Create the first admin account securely
 const createInitialAdmin = async (req, res) => {
   try {
     const { name, email, password, setupSecret } = req.body;
 
-    // Verify the setup secret stored in Render
     if (
       !process.env.ADMIN_SETUP_SECRET ||
       !setupSecret ||
@@ -306,7 +291,6 @@ const createInitialAdmin = async (req, res) => {
       });
     }
 
-    // Prevent creation if an admin already exists
     const existingAdmin = await User.findOne({ role: 'admin' });
 
     if (existingAdmin) {
@@ -371,7 +355,6 @@ const createInitialAdmin = async (req, res) => {
     });
   }
 };
-
 
 module.exports = {
   registerUser,
