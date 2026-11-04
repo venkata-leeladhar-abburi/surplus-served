@@ -185,10 +185,8 @@ exports.requestDonation = async (req, res) => {
         throw new Error('DONATION_NOT_AVAILABLE');
       }
 
-      // Serialize request creation for this donation.
       await acquireQueueLock(donation._id, session);
 
-      // Prevent duplicate unresolved requests by the same NGO.
       const existingRequest = await Allocation.findOne({
         donationId: donation._id,
         ngoId: ngo._id,
@@ -294,10 +292,8 @@ exports.confirmOffer = async (req, res) => {
 
       donationId = allocation.donationId;
 
-      // Serialize this decision with other queue operations.
       await acquireQueueLock(donationId, session);
 
-      // Check whether the donation is still available.
       const donation = await Donation.findById(donationId).session(session);
 
       if (
@@ -333,7 +329,6 @@ exports.confirmOffer = async (req, res) => {
       }
     });
 
-    // If the NGO declines, consider the next queued NGO.
     if (!accept) {
       await activateNextRequest(donationId);
     }
@@ -347,8 +342,6 @@ exports.confirmOffer = async (req, res) => {
   } catch (error) {
     console.error('NGO offer confirmation error:', error);
 
-    // The transaction has aborted. Refreshing the queue now allows
-    // activateNextRequest to expire requests if the donation has expired.
     if (
       error.message === 'DONATION_UNAVAILABLE' &&
       donationId
@@ -356,7 +349,8 @@ exports.confirmOffer = async (req, res) => {
       await safelyActivateNextRequest(donationId);
 
       return res.status(409).json({
-        message: 'This donation is no longer available or its pickup window has ended.',
+        message:
+          'This donation is no longer available or its pickup window has ended.',
       });
     }
 
@@ -415,7 +409,6 @@ exports.approveAllocation = async (req, res) => {
         throw new Error('INVALID_OFFERED_QUANTITY');
       }
 
-      // Check donation availability before approving.
       const currentDonation = await Donation.findById(donationId).session(
         session
       );
@@ -430,9 +423,6 @@ exports.approveAllocation = async (req, res) => {
         throw new Error('INSUFFICIENT_PORTIONS');
       }
 
-      // Atomically deduct the approved portions.
-      // The conditions are checked again to protect against changes
-      // between the initial read and the update.
       const donation = await Donation.findOneAndUpdate(
         {
           _id: donationId,
@@ -456,7 +446,6 @@ exports.approveAllocation = async (req, res) => {
         throw new Error('INSUFFICIENT_PORTIONS');
       }
 
-      // If all portions are allocated, mark the donation as claimed.
       if (donation.remainingPortions === 0) {
         await Donation.updateOne(
           { _id: donation._id },
@@ -494,7 +483,6 @@ exports.approveAllocation = async (req, res) => {
       approvedAllocation = updated;
     });
 
-    // Refresh the queue only after the approval transaction commits.
     await activateNextRequest(donationId);
 
     return res.status(200).json({
@@ -513,12 +501,11 @@ exports.approveAllocation = async (req, res) => {
       error.message === 'INSUFFICIENT_PORTIONS' &&
       donationId
     ) {
-      // The approval transaction was aborted, so no portions were deducted.
-      // Refresh the queue to expire requests if the donation is no longer usable.
       await safelyActivateNextRequest(donationId);
 
       return res.status(409).json({
-        message: 'Not enough portions are available or the pickup window has ended. The request could not be approved.',
+        message:
+          'Not enough portions are available or the pickup window has ended. The request could not be approved.',
       });
     }
 
@@ -572,7 +559,6 @@ exports.rejectAllocation = async (req, res) => {
 
       donationId = allocation.donationId;
 
-      // Serialize rejection with other queue operations.
       await acquireQueueLock(donationId, session);
 
       rejectedAllocation = await Allocation.findOneAndUpdate(
@@ -598,7 +584,6 @@ exports.rejectAllocation = async (req, res) => {
       }
     });
 
-    // Activate the next NGO only after rejection is committed.
     await activateNextRequest(donationId);
 
     return res.status(200).json({
@@ -688,6 +673,65 @@ exports.getMyAllocations = async (req, res) => {
   }
 };
 
+// GET /api/donations/my-donor-allocations
+// Donor retrieves their own allocations without exposing pickup codes.
+exports.getMyDonorAllocations = async (req, res) => {
+  try {
+    if (req.user.role !== 'donor') {
+      return res.status(403).json({
+        message: 'Only donors can access their allocations.',
+      });
+    }
+
+    const { status } = req.query;
+
+    const allowedStatuses = [
+      'queued',
+      'awaiting_ngo_confirmation',
+      'pending_donor',
+      'approved',
+      'rejected',
+      'declined',
+      'collected',
+      'cancelled',
+      'expired',
+    ];
+
+    if (status && !allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        message: 'Invalid allocation status filter.',
+        allowedStatuses,
+      });
+    }
+
+    const filter = {
+      donorId: req.user._id,
+    };
+
+    if (status) {
+      filter.status = status;
+    }
+
+    const allocations = await Allocation.find(filter)
+      .populate(
+        'donationId',
+        'title description imageUrl address pickupWindowStart pickupWindowEnd'
+      )
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      count: allocations.length,
+      allocations,
+    });
+  } catch (error) {
+    console.error('Fetch donor allocations error:', error);
+
+    return res.status(500).json({
+      message: 'Unable to fetch your allocations.',
+    });
+  }
+};
+
 // POST /api/donations/allocations/:allocationId/verify-pickup
 // Only the original donor verifies the NGO's pickup code.
 exports.verifyPickupCode = async (req, res) => {
@@ -752,7 +796,6 @@ exports.verifyPickupCode = async (req, res) => {
         throw new Error('ALLOCATION_ALREADY_PROCESSED');
       }
 
-      // Serialize pickup completion checks for this donation.
       await acquireQueueLock(allocation.donationId, session);
 
       const donation = await Donation.findById(
