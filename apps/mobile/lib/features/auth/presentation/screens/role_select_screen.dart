@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
@@ -5,8 +6,7 @@ import 'package:ss_design_system/ss_design_system.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../domain/user_role.dart';
 
-/// Role picked before authentication, per scope §16: three roles only —
-/// Donor, Receiver (verified NGO), Admin — no Volunteer.
+/// The three supported roles: Donor, NGO and Admin.
 class RoleSelectScreen extends StatelessWidget {
   const RoleSelectScreen({super.key});
 
@@ -14,6 +14,7 @@ class RoleSelectScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.ssColors;
     final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: c.background,
       body: SafeArea(
@@ -28,25 +29,32 @@ class RoleSelectScreen extends StatelessWidget {
                 style: SsTypeScale.h2.copyWith(color: c.onSurface),
               ),
               const SizedBox(height: SsSpacing.xxl),
+
               _RoleCard(
                 illustration: SsIllustrations.roleDonor,
                 title: l10n.roleDonor,
                 subtitle: l10n.roleDonorSubtitle,
-                onTap: () => context.pushNamed('phone', extra: UserRole.donor),
+                onTap: () =>
+                    context.pushNamed('phone', extra: UserRole.donor),
               ),
+
               const SizedBox(height: SsSpacing.lg),
+
               _RoleCard(
                 illustration: SsIllustrations.roleReceiver,
-                title: l10n.roleReceiver,
+                title: 'I run an NGO',
                 subtitle: l10n.roleReceiverSubtitle,
                 onTap: () =>
-                    context.pushNamed('phone', extra: UserRole.receiver),
+                    context.pushNamed('phone', extra: UserRole.ngo),
               ),
+
               const SizedBox(height: SsSpacing.lg),
+
               TextButton(
                 onPressed: () => context.pushNamed('login'),
                 child: const Text('Already have an account? Log in'),
               ),
+
               const Spacer(flex: 2),
             ],
           ),
@@ -72,6 +80,7 @@ class _RoleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.ssColors;
+
     return Semantics(
       button: true,
       label: '$title. $subtitle',
@@ -109,7 +118,10 @@ class _RoleCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                SsIcon(SsIcons.chevronRight, color: c.onSurfaceVariant),
+                SsIcon(
+                  SsIcons.chevronRight,
+                  color: c.onSurfaceVariant,
+                ),
               ],
             ),
           ),
