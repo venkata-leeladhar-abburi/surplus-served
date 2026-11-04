@@ -18,7 +18,6 @@ const UNRESOLVED_NGO_STATUSES = [
 ];
 
 // Serialize queue operations by writing to the same Donation document.
-// queueRevision must exist in the Donation schema.
 const acquireQueueLock = async (donationId, session) => {
   const result = await Donation.updateOne(
     { _id: donationId },
@@ -32,7 +31,6 @@ const acquireQueueLock = async (donationId, session) => {
 };
 
 // Activate the oldest queued request for a donation.
-// The transaction and queueRevision write serialize concurrent activations.
 const activateNextRequest = async (donationId) => {
   const session = await mongoose.startSession();
 
@@ -42,7 +40,6 @@ const activateNextRequest = async (donationId) => {
 
       if (!donation) return;
 
-      // Serialize all queue-processing operations for this donation.
       await acquireQueueLock(donationId, session);
 
       const currentDonation = await Donation.findById(donationId).session(
@@ -51,8 +48,9 @@ const activateNextRequest = async (donationId) => {
 
       if (!currentDonation) return;
 
-      // Expire requests that can no longer be fulfilled.
+      // Expire requests if the donation can no longer be fulfilled.
       if (
+        !currentDonation.pickupWindowEnd ||
         currentDonation.pickupWindowEnd <= new Date() ||
         currentDonation.remainingPortions <= 0 ||
         currentDonation.status !== 'available'
@@ -68,7 +66,9 @@ const activateNextRequest = async (donationId) => {
               ],
             },
           },
-          { $set: { status: 'expired' } },
+          {
+            $set: { status: 'expired' },
+          },
           { session }
         );
 
@@ -83,7 +83,7 @@ const activateNextRequest = async (donationId) => {
 
       if (activeRequest) return;
 
-      // FIFO: oldest request first.
+      // FIFO: oldest queued request first.
       const nextRequest = await Allocation.findOne({
         donationId,
         status: 'queued',
@@ -121,6 +121,18 @@ const activateNextRequest = async (donationId) => {
     });
   } finally {
     await session.endSession();
+  }
+};
+
+// Refresh the queue after a transaction fails because a donation
+// may have expired or become unavailable.
+const safelyActivateNextRequest = async (donationId) => {
+  if (!donationId) return;
+
+  try {
+    await activateNextRequest(donationId);
+  } catch (error) {
+    console.error('Queue refresh error:', error);
   }
 };
 
@@ -237,11 +249,10 @@ exports.requestDonation = async (req, res) => {
 
 // POST /api/donations/allocations/:allocationId/confirm-offer
 // NGO accepts or rejects a reduced quantity.
-
-// POST /api/donations/allocations/:allocationId/confirm-offer
-// NGO accepts or rejects a reduced quantity.
 exports.confirmOffer = async (req, res) => {
   const session = await mongoose.startSession();
+
+  let donationId = null;
 
   try {
     const { allocationId } = req.params;
@@ -269,7 +280,6 @@ exports.confirmOffer = async (req, res) => {
     }
 
     let updatedAllocation = null;
-    let donationId = null;
 
     await session.withTransaction(async () => {
       const allocation = await Allocation.findOne({
@@ -286,6 +296,19 @@ exports.confirmOffer = async (req, res) => {
 
       // Serialize this decision with other queue operations.
       await acquireQueueLock(donationId, session);
+
+      // Check whether the donation is still available.
+      const donation = await Donation.findById(donationId).session(session);
+
+      if (
+        !donation ||
+        !donation.pickupWindowEnd ||
+        donation.pickupWindowEnd <= new Date() ||
+        donation.remainingPortions <= 0 ||
+        donation.status !== 'available'
+      ) {
+        throw new Error('DONATION_UNAVAILABLE');
+      }
 
       updatedAllocation = await Allocation.findOneAndUpdate(
         {
@@ -324,6 +347,19 @@ exports.confirmOffer = async (req, res) => {
   } catch (error) {
     console.error('NGO offer confirmation error:', error);
 
+    // The transaction has aborted. Refreshing the queue now allows
+    // activateNextRequest to expire requests if the donation has expired.
+    if (
+      error.message === 'DONATION_UNAVAILABLE' &&
+      donationId
+    ) {
+      await safelyActivateNextRequest(donationId);
+
+      return res.status(409).json({
+        message: 'This donation is no longer available or its pickup window has ended.',
+      });
+    }
+
     if (
       error.message === 'OFFER_NOT_FOUND' ||
       error.message === 'OFFER_ALREADY_PROCESSED'
@@ -347,6 +383,8 @@ exports.confirmOffer = async (req, res) => {
 exports.approveAllocation = async (req, res) => {
   const session = await mongoose.startSession();
 
+  let donationId = null;
+
   try {
     const { allocationId } = req.params;
 
@@ -369,16 +407,35 @@ exports.approveAllocation = async (req, res) => {
         throw new Error('ALLOCATION_NOT_PENDING');
       }
 
+      donationId = allocation.donationId;
+
       const quantity = allocation.offeredPortions;
 
       if (!Number.isInteger(quantity) || quantity < 1) {
         throw new Error('INVALID_OFFERED_QUANTITY');
       }
 
+      // Check donation availability before approving.
+      const currentDonation = await Donation.findById(donationId).session(
+        session
+      );
+
+      if (
+        !currentDonation ||
+        !currentDonation.pickupWindowEnd ||
+        currentDonation.pickupWindowEnd <= new Date() ||
+        currentDonation.status !== 'available' ||
+        currentDonation.remainingPortions < quantity
+      ) {
+        throw new Error('INSUFFICIENT_PORTIONS');
+      }
+
       // Atomically deduct the approved portions.
+      // The conditions are checked again to protect against changes
+      // between the initial read and the update.
       const donation = await Donation.findOneAndUpdate(
         {
-          _id: allocation.donationId,
+          _id: donationId,
           donorId: req.user._id,
           status: 'available',
           remainingPortions: { $gte: quantity },
@@ -437,8 +494,8 @@ exports.approveAllocation = async (req, res) => {
       approvedAllocation = updated;
     });
 
-    // The approval transaction is committed before activating the next NGO.
-    await activateNextRequest(approvedAllocation.donationId);
+    // Refresh the queue only after the approval transaction commits.
+    await activateNextRequest(donationId);
 
     return res.status(200).json({
       message: 'Allocation approved successfully.',
@@ -452,6 +509,19 @@ exports.approveAllocation = async (req, res) => {
   } catch (error) {
     console.error('Allocation approval error:', error);
 
+    if (
+      error.message === 'INSUFFICIENT_PORTIONS' &&
+      donationId
+    ) {
+      // The approval transaction was aborted, so no portions were deducted.
+      // Refresh the queue to expire requests if the donation is no longer usable.
+      await safelyActivateNextRequest(donationId);
+
+      return res.status(409).json({
+        message: 'Not enough portions are available or the pickup window has ended. The request could not be approved.',
+      });
+    }
+
     if (error.message === 'ALLOCATION_NOT_PENDING') {
       return res.status(404).json({
         message: 'No pending allocation found for your donation.',
@@ -464,12 +534,6 @@ exports.approveAllocation = async (req, res) => {
       });
     }
 
-    if (error.message === 'INSUFFICIENT_PORTIONS') {
-      return res.status(409).json({
-        message: 'Not enough portions are available or the pickup window has ended.',
-      });
-    }
-
     return res.status(500).json({
       message: 'Unable to approve allocation.',
     });
@@ -477,9 +541,6 @@ exports.approveAllocation = async (req, res) => {
     await session.endSession();
   }
 };
-
-// POST /api/donations/allocations/:allocationId/reject
-// Donor rejects an NGO request.
 
 // POST /api/donations/allocations/:allocationId/reject
 // Donor rejects an NGO request.
@@ -565,17 +626,17 @@ exports.rejectAllocation = async (req, res) => {
 };
 
 // GET /api/donations/my-allocations
-// Only the owning NGO can retrieve its pickup codes.
+// Only the owning verified NGO can retrieve its pickup codes.
 exports.getMyAllocations = async (req, res) => {
   try {
     if (
-  req.user.role !== 'ngo' ||
-  req.user.ngoDetails?.verificationStatus !== 'verified'
-) {
-  return res.status(403).json({
-    message: 'Only verified NGOs can access their allocations.',
-  });
-}
+      req.user.role !== 'ngo' ||
+      req.user.ngoDetails?.verificationStatus !== 'verified'
+    ) {
+      return res.status(403).json({
+        message: 'Only verified NGOs can access their allocations.',
+      });
+    }
 
     const { status } = req.query;
 
@@ -702,6 +763,8 @@ exports.verifyPickupCode = async (req, res) => {
         throw new Error('DONATION_NOT_FOUND');
       }
 
+      // Portions were already deducted during approval.
+      // Pickup verification must not deduct them again.
       if (donation.remainingPortions === 0) {
         const otherApproved = await Allocation.exists({
           donationId: donation._id,
@@ -753,6 +816,12 @@ exports.verifyPickupCode = async (req, res) => {
     if (error.message === 'ALLOCATION_ALREADY_PROCESSED') {
       return res.status(409).json({
         message: 'Allocation has already been collected or changed.',
+      });
+    }
+
+    if (error.message === 'DONATION_NOT_FOUND') {
+      return res.status(404).json({
+        message: 'The associated donation could not be found.',
       });
     }
 
