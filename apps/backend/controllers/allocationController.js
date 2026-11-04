@@ -480,7 +480,12 @@ exports.approveAllocation = async (req, res) => {
 
 // POST /api/donations/allocations/:allocationId/reject
 // Donor rejects an NGO request.
+
+// POST /api/donations/allocations/:allocationId/reject
+// Donor rejects an NGO request.
 exports.rejectAllocation = async (req, res) => {
+  const session = await mongoose.startSession();
+
   try {
     const { allocationId } = req.params;
 
@@ -490,39 +495,72 @@ exports.rejectAllocation = async (req, res) => {
       });
     }
 
-    const allocation = await Allocation.findOneAndUpdate(
-      {
+    let rejectedAllocation = null;
+    let donationId = null;
+
+    await session.withTransaction(async () => {
+      const allocation = await Allocation.findOne({
         _id: allocationId,
         donorId: req.user._id,
         status: 'pending_donor',
-      },
-      {
-        $set: {
-          status: 'rejected',
-          donorDecisionAt: new Date(),
+      }).session(session);
+
+      if (!allocation) {
+        throw new Error('ALLOCATION_NOT_PENDING');
+      }
+
+      donationId = allocation.donationId;
+
+      // Serialize rejection with other queue operations.
+      await acquireQueueLock(donationId, session);
+
+      rejectedAllocation = await Allocation.findOneAndUpdate(
+        {
+          _id: allocationId,
+          donorId: req.user._id,
+          status: 'pending_donor',
         },
-      },
-      { new: true }
-    );
+        {
+          $set: {
+            status: 'rejected',
+            donorDecisionAt: new Date(),
+          },
+        },
+        {
+          new: true,
+          session,
+        }
+      );
 
-    if (!allocation) {
-      return res.status(404).json({
-        message: 'No pending allocation found.',
-      });
-    }
+      if (!rejectedAllocation) {
+        throw new Error('ALLOCATION_ALREADY_PROCESSED');
+      }
+    });
 
-    await activateNextRequest(allocation.donationId);
+    // Activate the next NGO only after rejection is committed.
+    await activateNextRequest(donationId);
 
     return res.status(200).json({
       message: 'Request rejected. The next NGO will be considered.',
-      allocation,
+      allocation: rejectedAllocation,
     });
   } catch (error) {
     console.error('Allocation rejection error:', error);
 
+    if (
+      error.message === 'ALLOCATION_NOT_PENDING' ||
+      error.message === 'ALLOCATION_ALREADY_PROCESSED'
+    ) {
+      return res.status(409).json({
+        message: 'No pending allocation found or it was already processed.',
+      });
+    }
+
     return res.status(500).json({
       message: 'Unable to reject allocation.',
     });
+  } finally {
+    await session.endSession();
   }
 };
 
