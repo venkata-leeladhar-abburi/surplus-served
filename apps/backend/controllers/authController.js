@@ -53,7 +53,7 @@ const registerUser = async (req, res) => {
       });
     }
 
-    if (!['donor', 'receiver', 'ngo'].includes(role)) {
+    if (!['donor',  'ngo'].includes(role)) {
       return res.status(400).json({
         message: 'Invalid role.',
       });
