@@ -237,7 +237,12 @@ exports.requestDonation = async (req, res) => {
 
 // POST /api/donations/allocations/:allocationId/confirm-offer
 // NGO accepts or rejects a reduced quantity.
+
+// POST /api/donations/allocations/:allocationId/confirm-offer
+// NGO accepts or rejects a reduced quantity.
 exports.confirmOffer = async (req, res) => {
+  const session = await mongoose.startSession();
+
   try {
     const { allocationId } = req.params;
     const { accept } = req.body;
@@ -263,55 +268,76 @@ exports.confirmOffer = async (req, res) => {
       });
     }
 
-    const allocation = await Allocation.findOne({
-      _id: allocationId,
-      ngoId: req.user._id,
-      status: 'awaiting_ngo_confirmation',
-    });
+    let updatedAllocation = null;
+    let donationId = null;
 
-    if (!allocation) {
-      return res.status(404).json({
-        message: 'No offer awaiting your confirmation was found.',
-      });
-    }
-
-    const updated = await Allocation.findOneAndUpdate(
-      {
+    await session.withTransaction(async () => {
+      const allocation = await Allocation.findOne({
         _id: allocationId,
         ngoId: req.user._id,
         status: 'awaiting_ngo_confirmation',
-      },
-      {
-        $set: {
-          status: accept ? 'pending_donor' : 'declined',
-          ngoDecisionAt: new Date(),
+      }).session(session);
+
+      if (!allocation) {
+        throw new Error('OFFER_NOT_FOUND');
+      }
+
+      donationId = allocation.donationId;
+
+      // Serialize this decision with other queue operations.
+      await acquireQueueLock(donationId, session);
+
+      updatedAllocation = await Allocation.findOneAndUpdate(
+        {
+          _id: allocationId,
+          ngoId: req.user._id,
+          status: 'awaiting_ngo_confirmation',
         },
-      },
-      { new: true }
-    );
+        {
+          $set: {
+            status: accept ? 'pending_donor' : 'declined',
+            ngoDecisionAt: new Date(),
+          },
+        },
+        {
+          new: true,
+          session,
+        }
+      );
 
-    if (!updated) {
-      return res.status(409).json({
-        message: 'This offer has already been processed.',
-      });
-    }
+      if (!updatedAllocation) {
+        throw new Error('OFFER_ALREADY_PROCESSED');
+      }
+    });
 
+    // If the NGO declines, consider the next queued NGO.
     if (!accept) {
-      await activateNextRequest(allocation.donationId);
+      await activateNextRequest(donationId);
     }
 
     return res.status(200).json({
       message: accept
         ? 'Offer accepted. Waiting for donor approval.'
         : 'Offer declined. The next NGO will be considered.',
-      allocation: updated,
+      allocation: updatedAllocation,
     });
   } catch (error) {
     console.error('NGO offer confirmation error:', error);
 
+    if (
+      error.message === 'OFFER_NOT_FOUND' ||
+      error.message === 'OFFER_ALREADY_PROCESSED'
+    ) {
+      return res.status(409).json({
+        message: 'This offer is no longer awaiting your confirmation.',
+      });
+    }
+
     return res.status(500).json({
       message: 'Unable to process your confirmation.',
     });
+  } finally {
+    await session.endSession();
   }
 };
 
