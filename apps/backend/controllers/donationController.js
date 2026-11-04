@@ -140,6 +140,14 @@ exports.createDonation = async (req, res) => {
 exports.getDonations = async (req, res) => {
   try {
     const { search, locality } = req.query;
+    if (
+  req.user.role === 'ngo' &&
+  req.user.ngoDetails?.verificationStatus !== 'verified'
+) {
+  return res.status(403).json({
+    message: 'Your NGO account is not verified.',
+  });
+}
 
     const filter = {
       status: 'available',
