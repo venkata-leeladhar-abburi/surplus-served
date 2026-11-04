@@ -73,6 +73,10 @@ const donationSchema = new mongoose.Schema(
       enum: ['available', 'claimed', 'collected', 'cancelled'],
       default: 'available',
     },
+    queueRevision: {
+  type: Number,
+  default: 0,
+},
   },
   { timestamps: true }
 );
