@@ -43,7 +43,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   String _errorMessage = 'Invalid password or connection error';
 
   Future<void> _authenticate() async {
-    if (_passwordController.text.trim().length < 6) return;
+    if (_passwordController.text.trim().length < 6 || _verifying) {
+      return;
+    }
 
     setState(() {
       _verifying = true;
@@ -63,18 +65,24 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
       if (!mounted) return;
 
-      ref.read(sessionProvider.notifier).signIn(session);
-
       if (session.role == UserRole.ngo) {
+        // Do not create an authenticated session for a pending NGO.
+        ref.read(sessionProvider.notifier).signOut();
+
         context.go('/login');
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'NGO registration submitted. Please wait for admin approval.',
+              'NGO registration submitted successfully. '
+              'Please wait for admin approval before logging in.',
             ),
+            duration: Duration(seconds: 5),
           ),
         );
       } else {
+        // Donors can access the app immediately after registration.
+        ref.read(sessionProvider.notifier).signIn(session);
         context.go('/donor');
       }
     } catch (e) {
@@ -151,7 +159,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                     const SizedBox(height: SsSpacing.md),
                     TextButton(
                       onPressed: () => context.pushNamed('login'),
-                      child: const Text('Already have an account? Log In here'),
+                      child: const Text(
+                        'Already have an account? Log In here',
+                      ),
                     ),
                   ],
                 ],
