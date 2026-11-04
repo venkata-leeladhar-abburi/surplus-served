@@ -17,7 +17,10 @@ const generateToken = (id, role) => {
 };
 
 // Register User
+
 const registerUser = async (req, res) => {
+  let uploadedDocumentPublicId = null;
+
   try {
     const { password, role } = req.body;
 
@@ -74,6 +77,12 @@ const registerUser = async (req, res) => {
         });
       }
 
+      if (!req.file) {
+        return res.status(400).json({
+          message: 'NGO registration certificate is required.',
+        });
+      }
+
       ngoDetails = {
         organizationName,
         registrationNumber,
@@ -82,6 +91,86 @@ const registerUser = async (req, res) => {
         rejectionReason: null,
       };
     }
+
+    const userExists = await User.findOne({ email });
+
+    if (userExists) {
+      return res.status(409).json({
+        message: 'User already exists.',
+      });
+    }
+
+    // Upload NGO certificate to Cloudinary
+    if (role === 'ngo') {
+      const uploadResult = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'surplus-served/ngo-certificates',
+            resource_type: 'auto',
+          },
+          (error, result) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(result);
+            }
+          }
+        );
+
+        uploadStream.end(req.file.buffer);
+      });
+
+      ngoDetails.documentUrl = uploadResult.secure_url;
+      uploadedDocumentPublicId = uploadResult.public_id;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role,
+      ngoDetails,
+    });
+
+    const token = generateToken(user._id, user.role);
+
+    return res.status(201).json({
+      message: 'Registration successful.',
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      ngoDetails: user.ngoDetails
+        ? {
+            organizationName: user.ngoDetails.organizationName,
+            registrationNumber: user.ngoDetails.registrationNumber,
+            verificationStatus: user.ngoDetails.verificationStatus,
+          }
+        : undefined,
+      token,
+    });
+  } catch (error) {
+    // Delete uploaded certificate if registration fails
+    if (uploadedDocumentPublicId) {
+      try {
+        await cloudinary.uploader.destroy(
+          uploadedDocumentPublicId,
+          { resource_type: 'image' }
+        );
+      } catch (cleanupError) {
+        console.error('Certificate cleanup error:', cleanupError);
+      }
+    }
+
+    console.error('Registration error:', error);
+
+    return res.status(500).json({
+      message: 'Registration failed. Please try again.',
+    });
+  }
+};
 
     const userExists = await User.findOne({ email });
 
