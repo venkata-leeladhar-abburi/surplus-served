@@ -43,7 +43,7 @@ class RoleSelectScreen extends StatelessWidget {
               _RoleCard(
                 illustration: SsIllustrations.roleReceiver,
                 title: 'I run an NGO',
-                subtitle: l10n.roleReceiverSubtitle,
+                subtitle: 'Register your NGO to request available food donations.',
                 onTap: () =>
                     context.pushNamed('phone', extra: UserRole.ngo),
               ),
