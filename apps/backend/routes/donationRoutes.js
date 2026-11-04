@@ -74,13 +74,14 @@ router.get(
 );
 
 // --------------------------------------------------
-// Donation browsing routes
+// NGO donation browsing routes
 // --------------------------------------------------
 
+// Only NGOs can browse donations
 router.get(
   '/',
   protect,
-  authorizeRoles( 'ngo'),
+  authorizeRoles('ngo'),
   donationController.getDonations
 );
 
@@ -88,12 +89,12 @@ router.get(
 router.get(
   '/:id',
   protect,
-  authorizeRoles('donor',  'ngo'),
+  authorizeRoles('donor', 'ngo'),
   donationController.getDonationById
 );
 
 // --------------------------------------------------
-// NGO-only allocation routes
+// NGO allocation routes
 // --------------------------------------------------
 
 // NGO views its own allocations and pickup codes
@@ -122,9 +123,9 @@ router.post(
 
 // NGO dashboard
 router.get(
-  '/dashboard/receiver',
+  '/dashboard/ngo',
   protect,
-  authorizeRoles( 'ngo'),
+  authorizeRoles('ngo'),
   dashboardController.getReceiverDashboard
 );
 
