@@ -1,4 +1,6 @@
+
 const Donation = require('../models/Donation');
+const Allocation = require('../models/Allocation');
 
 // Donor dashboard statistics
 exports.getDonorDashboard = async (req, res) => {
@@ -29,32 +31,36 @@ exports.getDonorDashboard = async (req, res) => {
   }
 };
 
-// Receiver dashboard statistics
-exports.getReceiverDashboard = async (req, res) => {
+// NGO dashboard statistics
+exports.getNgoDashboard = async (req, res) => {
   try {
-    const receiverId = req.user._id;
+    const ngoId = req.user._id;
 
-    const [total, claimed, collected] = await Promise.all([
-      Donation.countDocuments({ allocatedToNgoId: receiverId }),
-      Donation.countDocuments({
-        allocatedToNgoId: receiverId,
-        status: 'claimed',
-      }),
-      Donation.countDocuments({
-        allocatedToNgoId: receiverId,
-        status: 'collected',
-      }),
-    ]);
+    const [total, queued, awaitingConfirmation, pendingDonor, approved, collected] =
+      await Promise.all([
+        Allocation.countDocuments({ ngoId }),
+        Allocation.countDocuments({ ngoId, status: 'queued' }),
+        Allocation.countDocuments({
+          ngoId,
+          status: 'awaiting_ngo_confirmation',
+        }),
+        Allocation.countDocuments({ ngoId, status: 'pending_donor' }),
+        Allocation.countDocuments({ ngoId, status: 'approved' }),
+        Allocation.countDocuments({ ngoId, status: 'collected' }),
+      ]);
 
     return res.status(200).json({
       total,
-      claimed,
+      queued,
+      awaitingConfirmation,
+      pendingDonor,
+      approved,
       collected,
     });
   } catch (error) {
-    console.error('Receiver dashboard error:', error);
+    console.error('NGO dashboard error:', error);
     return res.status(500).json({
-      message: 'Unable to fetch receiver dashboard statistics.',
+      message: 'Unable to fetch NGO dashboard statistics.',
     });
   }
 };
