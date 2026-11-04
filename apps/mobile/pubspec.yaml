@@ -1,5 +1,6 @@
+
 name: surplus_served_mobile
-description: "Surplus → Served — Donor and Receiver app."
+description: "Surplus → Served — Donor and NGO app."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,17 +10,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
   http: ^1.2.0
+  file_picker: ^13.3.2
+
   flutter_localizations:
     sdk: flutter
 
   ss_design_system:
     path: ../../packages/ss_design_system
 
-  # Routing — role guards, deep links (ARCHITECTURE.md §2)
+  # Routing — role guards, deep links
   go_router: ^14.6.2
 
-  # State — AsyncNotifier per screen, ref.watch in build / ref.read in callbacks
+  # State management
   flutter_riverpod: ^2.6.1
 
   intl: any
