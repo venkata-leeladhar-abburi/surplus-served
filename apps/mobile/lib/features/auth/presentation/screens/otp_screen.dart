@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ss_design_system/ss_design_system.dart';
@@ -12,10 +13,17 @@ class OtpScreenArgs {
     required this.name,
     required this.email,
     required this.role,
+    this.organizationName,
+    this.registrationNumber,
+    this.certificatePath,
   });
+
   final String name;
   final String email;
   final UserRole role;
+  final String? organizationName;
+  final String? registrationNumber;
+  final String? certificatePath;
 }
 
 class OtpScreen extends ConsumerStatefulWidget {
@@ -29,24 +37,46 @@ class OtpScreen extends ConsumerStatefulWidget {
 
 class _OtpScreenState extends ConsumerState<OtpScreen> {
   final _passwordController = TextEditingController();
+
   bool _verifying = false;
   bool _hasError = false;
   String _errorMessage = 'Invalid password or connection error';
 
   Future<void> _authenticate() async {
+    if (_passwordController.text.trim().length < 6) return;
+
     setState(() {
       _verifying = true;
       _hasError = false;
     });
+
     try {
       final session = await ref.read(authRepositoryProvider).register(
             name: widget.args.name,
             email: widget.args.email,
             password: _passwordController.text.trim(),
             role: widget.args.role,
+            organizationName: widget.args.organizationName,
+            registrationNumber: widget.args.registrationNumber,
+            certificatePath: widget.args.certificatePath,
           );
 
+      if (!mounted) return;
+
       ref.read(sessionProvider.notifier).signIn(session);
+
+      if (session.role == UserRole.ngo) {
+        context.go('/login');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'NGO registration submitted. Please wait for admin approval.',
+            ),
+          ),
+        );
+      } else {
+        context.go('/donor');
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -55,16 +85,28 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         });
       }
     } finally {
-      if (mounted) setState(() => _verifying = false);
+      if (mounted) {
+        setState(() => _verifying = false);
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final c = context.ssColors;
+
     return Scaffold(
       backgroundColor: c.background,
-      appBar: AppBar(backgroundColor: c.background, elevation: 0),
+      appBar: AppBar(
+        backgroundColor: c.background,
+        elevation: 0,
+      ),
       body: Column(
         children: [
           const ConnectivityBanner(),
@@ -81,7 +123,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   const SizedBox(height: SsSpacing.sm),
                   Text(
                     'Account: ${widget.args.email}',
-                    style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
+                    style: SsTypeScale.body.copyWith(
+                      color: c.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: SsSpacing.xl),
                   SsTextField(
@@ -97,17 +141,19 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                     label: 'Complete Sign Up',
                     expand: true,
                     isLoading: _verifying,
-                    onPressed: _passwordController.text.length >= 6 && !_verifying
+                    onPressed: _passwordController.text.trim().length >= 6 &&
+                            !_verifying
                         ? _authenticate
                         : null,
                   ),
-                  if (_hasError && _errorMessage.toLowerCase().contains('exists')) ...[
-  const SizedBox(height: SsSpacing.md),
-  TextButton(
-    onPressed: () => context.pushNamed('login'),
-    child: const Text('Already have an account? Log In here'),
-  ),
-],
+                  if (_hasError &&
+                      _errorMessage.toLowerCase().contains('exists')) ...[
+                    const SizedBox(height: SsSpacing.md),
+                    TextButton(
+                      onPressed: () => context.pushNamed('login'),
+                      child: const Text('Already have an account? Log In here'),
+                    ),
+                  ],
                 ],
               ),
             ),
