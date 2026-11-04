@@ -1,6 +1,7 @@
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../features/allocation/data/allocation_repository_fixture.dart';
+import '../features/allocation/data/http_allocation_repository.dart';
 import '../features/allocation/domain/allocation_repository.dart';
 import '../features/auth/data/http_auth_repository.dart';
 import '../features/auth/domain/auth_repository.dart';
@@ -19,6 +20,10 @@ final fixtureStoreProvider = Provider<FixtureStore>(
   (ref) => FixtureStore.instance,
 );
 
+final sessionProvider = NotifierProvider<SessionNotifier, Session?>(
+  SessionNotifier.new,
+);
+
 final donationRepositoryProvider = Provider<DonationRepository>(
   (ref) => HttpDonationRepository(),
 );
@@ -31,9 +36,13 @@ final discoveryRepositoryProvider = Provider<DiscoveryRepository>((ref) {
   );
 });
 
-final allocationRepositoryProvider = Provider<AllocationRepository>(
-  (ref) => AllocationRepositoryFixture(ref.watch(fixtureStoreProvider)),
-);
+final allocationRepositoryProvider = Provider<AllocationRepository>((ref) {
+  final session = ref.watch(sessionProvider);
+
+  return HttpAllocationRepository(
+    authToken: session?.token,
+  );
+});
 
 final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => HttpAuthRepository(),
@@ -57,7 +66,3 @@ class SessionNotifier extends Notifier<Session?> {
 
   void signOut() => state = null;
 }
-
-final sessionProvider = NotifierProvider<SessionNotifier, Session?>(
-  SessionNotifier.new,
-);
