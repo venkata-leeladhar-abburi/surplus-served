@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,10 +12,6 @@ import '../../../../shared/widgets/connectivity_banner.dart';
 import '../../../donation/domain/donation_status.dart';
 import '../../../donation/presentation/controllers/donation_providers.dart';
 
-/// The receiver's view of one live (or already-allocated) donation.
-/// Requesting it drives the allocation path (scope §15): a synchronous call
-/// in the fixture, a BullMQ job over Socket.IO in production — same shape
-/// either way, since this screen only talks to `AllocationRepository`.
 class DonationDetailScreen extends ConsumerStatefulWidget {
   const DonationDetailScreen({super.key, required this.donationId});
 
@@ -28,20 +25,50 @@ class DonationDetailScreen extends ConsumerStatefulWidget {
 class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
   bool _requesting = false;
 
-  Future<void> _request() async {
+  Future<void> _request(int availablePortions) async {
     final session = ref.read(sessionProvider);
-    if (session == null) return;
+
+    if (session == null || session.token == null || session.token!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in again.')),
+      );
+      return;
+    }
+
+    if (availablePortions <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No portions are currently available.')),
+      );
+      return;
+    }
+
     setState(() => _requesting = true);
+
     try {
-      await ref
-          .read(allocationRepositoryProvider)
-          .requestDonation(
+      await ref.read(allocationRepositoryProvider).requestDonation(
             donationId: widget.donationId,
             ngoId: session.userId,
             ngoName: session.name,
+            requestedPortions: availablePortions,
           );
+
+      if (!mounted) return;
+
+      ref.invalidate(donationByIdProvider(widget.donationId));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Donation request submitted successfully.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+      );
     } finally {
-      if (mounted) setState(() => _requesting = false);
+      if (mounted) {
+        setState(() => _requesting = false);
+      }
     }
   }
 
@@ -131,9 +158,6 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
                         ],
                       ),
                       const SizedBox(height: SsSpacing.xl),
-                      // §11: exact address only appears once this NGO holds the
-                      // allocation — enforced upstream, the screen just renders
-                      // whatever the repository gives it.
                       if (donation.address.hasExactDetails && allocatedToMe)
                         SsLocationRow(
                           address: donation.address.exactLine!,
@@ -151,7 +175,9 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
                           label: l10n.receiverRequestCta,
                           expand: true,
                           isLoading: _requesting,
-                          onPressed: _requesting ? null : _request,
+                          onPressed: _requesting
+                              ? null
+                              : () => _request(donation.portions),
                         ),
                       if (allocatedToMe)
                         SsButton.primary(
