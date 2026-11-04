@@ -875,3 +875,65 @@ exports.verifyPickupCode = async (req, res) => {
     await session.endSession();
   }
 };
+
+
+
+// GET /api/donations/my-donor-allocations
+// Fetch allocations belonging to the logged-in donor.
+// Pickup codes are intentionally hidden from this response.
+exports.getMyDonorAllocations = async (req, res) => {
+  try {
+    if (req.user.role !== 'donor') {
+      return res.status(403).json({
+        message: 'Only donors can access their allocations.',
+      });
+    }
+
+    const { status } = req.query;
+
+    const allowedStatuses = [
+      'queued',
+      'awaiting_ngo_confirmation',
+      'pending_donor',
+      'approved',
+      'rejected',
+      'declined',
+      'collected',
+      'cancelled',
+      'expired',
+    ];
+
+    if (status && !allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        message: 'Invalid allocation status filter.',
+        allowedStatuses,
+      });
+    }
+
+    const filter = {
+      donorId: req.user._id,
+    };
+
+    if (status) {
+      filter.status = status;
+    }
+
+    const allocations = await Allocation.find(filter)
+      .populate(
+        'donationId',
+        'title description imageUrl address pickupWindowStart pickupWindowEnd'
+      )
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      count: allocations.length,
+      allocations,
+    });
+  } catch (error) {
+    console.error('Fetch donor allocations error:', error);
+
+    return res.status(500).json({
+      message: 'Unable to fetch your allocations.',
+    });
+  }
+};
