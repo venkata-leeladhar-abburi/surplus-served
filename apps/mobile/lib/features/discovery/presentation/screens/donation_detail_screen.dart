@@ -57,13 +57,19 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
       ref.invalidate(donationByIdProvider(widget.donationId));
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Donation request submitted successfully.')),
+        const SnackBar(
+          content: Text('Donation request submitted successfully.'),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(
+          content: Text(
+            error.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
       );
     } finally {
       if (mounted) {
@@ -93,7 +99,9 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
           const ConnectivityBanner(),
           Expanded(
             child: donationAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(
+                child: CircularProgressIndicator(),
+              ),
               error: (err, _) => AsyncErrorView(
                 error: err,
                 onRetry: () =>
@@ -101,6 +109,7 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
               ),
               data: (donation) {
                 final session = ref.watch(sessionProvider);
+
                 final allocatedToMe =
                     donation.status == DonationStatus.allocated &&
                     donation.allocatedToNgoId == session?.userId;
@@ -137,7 +146,9 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
                       if (donation.description != null) ...[
                         Text(
                           donation.description!,
-                          style: SsTypeScale.body.copyWith(color: c.onSurface),
+                          style: SsTypeScale.body.copyWith(
+                            color: c.onSurface,
+                          ),
                         ),
                         const SizedBox(height: SsSpacing.lg),
                       ],
@@ -178,15 +189,6 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
                           onPressed: _requesting
                               ? null
                               : () => _request(donation.portions),
-                        ),
-                      if (allocatedToMe)
-                        SsButton.primary(
-                          label: l10n.receiverEnterCodeCta,
-                          expand: true,
-                          onPressed: () => context.pushNamed(
-                            'receiverEnterCode',
-                            pathParameters: {'id': donation.id},
-                          ),
                         ),
                     ],
                   ),
