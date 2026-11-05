@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../domain/auth_repository.dart';
 import '../domain/session.dart';
@@ -51,6 +52,31 @@ class HttpAuthRepository implements AuthRepository {
         throw Exception('Selected certificate file does not exist.');
       }
 
+      final extension =
+          certificatePath.split('.').last.toLowerCase();
+
+      final MediaType contentType;
+
+      switch (extension) {
+        case 'jpg':
+        case 'jpeg':
+          contentType = MediaType('image', 'jpeg');
+          break;
+
+        case 'png':
+          contentType = MediaType('image', 'png');
+          break;
+
+        case 'pdf':
+          contentType = MediaType('application', 'pdf');
+          break;
+
+        default:
+          throw Exception(
+            'Only JPG, PNG and PDF certificates are allowed.',
+          );
+      }
+
       final request = http.MultipartRequest(
         'POST',
         Uri.parse('$_baseUrl/register'),
@@ -69,6 +95,7 @@ class HttpAuthRepository implements AuthRepository {
         await http.MultipartFile.fromPath(
           'certificate',
           certificatePath,
+          contentType: contentType,
         ),
       );
 
