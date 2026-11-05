@@ -10,9 +10,9 @@ import '../features/discovery/data/http_discovery_repository.dart';
 import '../features/discovery/domain/discovery_repository.dart';
 import '../features/donation/data/http_donation_repository.dart';
 import '../features/donation/domain/donation_repository.dart';
-import '../features/notifications/data/notification_repository_fixture.dart';
+import '../features/notifications/data/http_notification_repository.dart';
 import '../features/notifications/domain/notification_repository.dart';
-import '../features/recurring/data/recurring_repository_fixture.dart';
+import '../features/recurring/data/http_recurring_repository.dart';
 import '../features/recurring/domain/recurring_repository.dart';
 import '../shared/fixtures/fixture_store.dart';
 
@@ -48,15 +48,17 @@ final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => HttpAuthRepository(),
 );
 
-final recurringRepositoryProvider = Provider<RecurringRepository>(
-  (ref) => RecurringRepositoryFixture(
-    ref.watch(donationRepositoryProvider),
-  ),
-);
+final recurringRepositoryProvider = Provider<RecurringRepository>((ref) {
+  final session = ref.watch(sessionProvider);
 
-final notificationRepositoryProvider = Provider<NotificationRepository>(
-  (ref) => NotificationRepositoryFixture(),
-);
+  return HttpRecurringRepository(authToken: session?.token);
+});
+
+final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
+  final session = ref.watch(sessionProvider);
+
+  return HttpNotificationRepository(authToken: session?.token);
+});
 
 class SessionNotifier extends Notifier<Session?> {
   @override
