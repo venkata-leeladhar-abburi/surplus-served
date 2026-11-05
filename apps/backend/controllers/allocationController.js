@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 
 const Donation = require('../models/Donation');
 const Allocation = require('../models/Allocation');
+const { notifyAllocations } = require('../utils/notifications');
 
 const ACTIVE_STATUSES = [
   'awaiting_ngo_confirmation',
@@ -34,8 +35,16 @@ const acquireQueueLock = async (donationId, session) => {
 const activateNextRequest = async (donationId) => {
   const session = await mongoose.startSession();
 
+  // Filled inside the transaction, sent as alerts after it commits.
+  let activated = null;
+  let closed = [];
+
   try {
     await session.withTransaction(async () => {
+      // The callback can be retried; start each attempt clean.
+      activated = null;
+      closed = [];
+
       const donation = await Donation.findById(donationId).session(session);
 
       if (!donation) return;
@@ -55,6 +64,19 @@ const activateNextRequest = async (donationId) => {
         currentDonation.remainingPortions <= 0 ||
         currentDonation.status !== 'available'
       ) {
+        closed = await Allocation.find({
+          donationId,
+          status: {
+            $in: [
+              'queued',
+              'awaiting_ngo_confirmation',
+              'pending_donor',
+            ],
+          },
+        })
+          .lean()
+          .session(session);
+
         await Allocation.updateMany(
           {
             donationId,
@@ -105,7 +127,7 @@ const activateNextRequest = async (donationId) => {
           ? 'awaiting_ngo_confirmation'
           : 'pending_donor';
 
-      await Allocation.updateOne(
+      const result = await Allocation.updateOne(
         {
           _id: nextRequest._id,
           status: 'queued',
@@ -118,9 +140,28 @@ const activateNextRequest = async (donationId) => {
         },
         { session }
       );
+
+      if (result.modifiedCount === 1) {
+        activated = {
+          ...nextRequest.toObject(),
+          offeredPortions,
+          status: nextStatus,
+        };
+      }
     });
   } finally {
     await session.endSession();
+  }
+
+  await notifyAllocations(closed, 'request_closed');
+
+  if (activated) {
+    await notifyAllocations(
+      activated,
+      activated.status === 'pending_donor'
+        ? 'request_to_review'
+        : 'reduced_offer'
+    );
   }
 };
 
@@ -329,7 +370,9 @@ exports.confirmOffer = async (req, res) => {
       }
     });
 
-    if (!accept) {
+    if (accept) {
+      await notifyAllocations(updatedAllocation, 'request_to_review');
+    } else {
       await activateNextRequest(donationId);
     }
 
@@ -543,6 +586,7 @@ exports.approveAllocation = async (req, res) => {
       approvedAllocation = updated;
     });
 
+    await notifyAllocations(approvedAllocation, 'request_approved');
     await activateNextRequest(donationId);
 
     return res.status(200).json({
@@ -649,6 +693,7 @@ exports.rejectAllocation = async (req, res) => {
       }
     });
 
+    await notifyAllocations(rejectedAllocation, 'request_rejected');
     await activateNextRequest(donationId);
 
     return res.status(200).json({
@@ -895,6 +940,8 @@ exports.verifyPickupCode = async (req, res) => {
 
       updatedAllocation = updated;
     });
+
+    await notifyAllocations(updatedAllocation, 'pickup_completed');
 
     return res.status(200).json({
       message: 'Food collection confirmed successfully.',

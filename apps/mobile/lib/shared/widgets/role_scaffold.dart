@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
+import '../../features/notifications/presentation/controllers/notification_providers.dart';
 import 'connectivity_banner.dart';
 
 /// One tab of a role's bottom nav — the label doubles as the a11y label,
@@ -42,6 +43,8 @@ class RoleScaffold extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.ssColors;
+    final unreadAlerts = ref.watch(unreadAlertsCountProvider);
+
     return Scaffold(
       backgroundColor: c.background,
       appBar: appBarTitle == null
@@ -65,10 +68,21 @@ class RoleScaffold extends ConsumerWidget {
       bottomNavigationBar: SsBottomNav(
         currentIndex: currentIndex,
         destinations: [
-          for (final t in tabs) SsNavDestination(icon: t.icon, label: t.label),
+          for (final t in tabs)
+            SsNavDestination(
+              icon: t.icon,
+              label: t.label,
+              badgeCount: t.routeName.endsWith('Notifications') &&
+                      unreadAlerts > 0
+                  ? unreadAlerts
+                  : null,
+            ),
         ],
         onSelected: (i) {
-          if (i != currentIndex) context.goNamed(tabs[i].routeName);
+          if (i == currentIndex) return;
+          // Keep the Alerts badge current as the user moves around.
+          ref.invalidate(notificationsProvider);
+          context.goNamed(tabs[i].routeName);
         },
       ),
     );

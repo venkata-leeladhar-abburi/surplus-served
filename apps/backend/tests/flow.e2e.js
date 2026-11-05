@@ -372,3 +372,142 @@ step('admin lists users, donations and activity without secrets', async () => {
   const bad = await call('GET', '/admin/ngos?status=weird', { token: ctx.admin });
   assert.strictEqual(bad.status, 400);
 });
+
+// ---------------- Alerts (in-app notifications) ----------------
+const alertTypes = async (token) => {
+  const r = await call('GET', '/notifications', { token });
+  assert.strictEqual(r.status, 200, JSON.stringify(r.json));
+  return { list: r.json.notifications, unread: r.json.unreadCount, types: r.json.notifications.map((n) => n.type) };
+};
+
+step('donor got an alert for each request to review', async () => {
+  const { types, unread } = await alertTypes(ctx.donor);
+  assert.deepStrictEqual(types.filter((t) => t === 'request_to_review').length, 2);
+  assert.strictEqual(unread, types.length);
+});
+
+step('NGOs get alerts for verification, offers, approval, rejection and pickup', async () => {
+  const n1 = await alertTypes(ctx.ngo1);
+  for (const t of ['ngo_verified', 'request_approved', 'pickup_completed']) {
+    assert.ok(n1.types.includes(t), `NGO1 missing ${t}: ${n1.types}`);
+  }
+  assert.ok(!n1.types.includes('reduced_offer'));
+  const n2 = await alertTypes(ctx.ngo2);
+  for (const t of ['ngo_verified', 'reduced_offer', 'request_rejected']) {
+    assert.ok(n2.types.includes(t), `NGO2 missing ${t}: ${n2.types}`);
+  }
+  assert.ok(!n2.types.includes('request_approved'));
+  // Newest first.
+  const times = n2.list.map((n) => new Date(n.createdAt).getTime());
+  assert.deepStrictEqual(times, [...times].sort((a, b) => b - a));
+});
+
+step('alerts can be marked read only by their owner', async () => {
+  const { list } = await alertTypes(ctx.ngo1);
+  const id = list[0]._id;
+  const other = await call('PATCH', `/notifications/${id}/read`, { token: ctx.ngo2 });
+  assert.strictEqual(other.status, 404);
+  const bad = await call('PATCH', '/notifications/not-an-id/read', { token: ctx.ngo1 });
+  assert.strictEqual(bad.status, 400);
+  const ok = await call('PATCH', `/notifications/${id}/read`, { token: ctx.ngo1 });
+  assert.strictEqual(ok.status, 200);
+  assert.strictEqual(ok.json.notification.read, true);
+  const all = await call('POST', '/notifications/read-all', { token: ctx.ngo1 });
+  assert.strictEqual(all.status, 200);
+  assert.strictEqual((await alertTypes(ctx.ngo1)).unread, 0);
+  const noAuth = await call('GET', '/notifications', {});
+  assert.strictEqual(noAuth.status, 401);
+});
+
+// ---------------- Recurring donations ----------------
+const template = (over = {}) => ({
+  title: 'Hostel dinner leftovers',
+  portions: 25,
+  windowHours: 2,
+  safeHours: 4,
+  locality: 'Ameerpet',
+  foodCategory: 'cooked_meal',
+  dietType: 'veg',
+  ...over,
+});
+
+step('only donors can use recurring donations', async () => {
+  const r = await call('GET', '/recurring', { token: ctx.ngo1 });
+  assert.strictEqual(r.status, 403);
+});
+
+step('recurring template validation', async () => {
+  const unsafe = await call('POST', '/recurring', { token: ctx.donor, body: template({ safeHours: 1 }) });
+  assert.strictEqual(unsafe.status, 400);
+  assert.match(unsafe.json.message, /safe/);
+  const noTitle = await call('POST', '/recurring', { token: ctx.donor, body: template({ title: ' ' }) });
+  assert.strictEqual(noTitle.status, 400);
+  const badCat = await call('POST', '/recurring', { token: ctx.donor, body: template({ foodCategory: 'pizza' }) });
+  assert.strictEqual(badCat.status, 400);
+});
+
+step('donor creates a recurring template', async () => {
+  const r = await call('POST', '/recurring', { token: ctx.donor, body: template() });
+  assert.strictEqual(r.status, 201, JSON.stringify(r.json));
+  assert.strictEqual(r.json.template.active, true);
+  assert.strictEqual(r.json.template.confirmedToday, false);
+  ctx.tpl1 = r.json.template._id;
+});
+
+step("confirming today posts a real donation, once per day", async () => {
+  const r = await call('POST', `/recurring/${ctx.tpl1}/confirm`, { token: ctx.donor, body: { portions: 15 } });
+  assert.strictEqual(r.status, 201, JSON.stringify(r.json));
+  assert.strictEqual(r.json.template.confirmedToday, true);
+  const d = r.json.donation;
+  assert.strictEqual(d.portions, 15);
+  assert.strictEqual(d.remainingPortions, 15);
+  assert.strictEqual(d.status, 'available');
+  assert.strictEqual(d.address.locality, 'Ameerpet');
+  assert.strictEqual(d.foodCategory, 'cooked_meal');
+  const windowMs = new Date(d.pickupWindowEnd) - new Date(d.pickupWindowStart);
+  assert.strictEqual(windowMs, 2 * 3600 * 1000);
+  assert.ok(new Date(d.expiresAt) >= new Date(d.pickupWindowEnd));
+  ctx.recurringDonation = d._id;
+
+  // NGOs see it like any other donation.
+  const feed = await call('GET', '/donations', { token: ctx.ngo1 });
+  assert.ok(JSON.stringify(feed.json).includes(d._id));
+
+  const again = await call('POST', `/recurring/${ctx.tpl1}/confirm`, { token: ctx.donor, body: {} });
+  assert.strictEqual(again.status, 409);
+  const skip = await call('POST', `/recurring/${ctx.tpl1}/skip`, { token: ctx.donor });
+  assert.strictEqual(skip.status, 409);
+});
+
+step('skipping today blocks confirming today', async () => {
+  const c = await call('POST', '/recurring', { token: ctx.donor, body: template({ title: 'Bakery bread' }) });
+  ctx.tpl2 = c.json.template._id;
+  const s = await call('POST', `/recurring/${ctx.tpl2}/skip`, { token: ctx.donor });
+  assert.strictEqual(s.status, 200);
+  assert.strictEqual(s.json.template.skippedToday, true);
+  const conf = await call('POST', `/recurring/${ctx.tpl2}/confirm`, { token: ctx.donor });
+  assert.strictEqual(conf.status, 409);
+});
+
+step('paused templates cannot post; edit, list and delete work', async () => {
+  const c = await call('POST', '/recurring', { token: ctx.donor, body: template({ title: 'Fruit' }) });
+  const id = c.json.template._id;
+  const pause = await call('PATCH', `/recurring/${id}`, { token: ctx.donor, body: { active: false } });
+  assert.strictEqual(pause.status, 200);
+  assert.strictEqual(pause.json.template.active, false);
+  const conf = await call('POST', `/recurring/${id}/confirm`, { token: ctx.donor });
+  assert.strictEqual(conf.status, 409);
+  const badEdit = await call('PATCH', `/recurring/${id}`, { token: ctx.donor, body: { windowHours: 6 } });
+  assert.strictEqual(badEdit.status, 400); // safeHours 4 < window 6
+  const edit = await call('PATCH', `/recurring/${id}`, { token: ctx.donor, body: { portions: 40 } });
+  assert.strictEqual(edit.json.template.portions, 40);
+
+  const list = await call('GET', '/recurring', { token: ctx.donor });
+  assert.strictEqual(list.json.count, 3);
+  const del = await call('DELETE', `/recurring/${id}`, { token: ctx.donor });
+  assert.strictEqual(del.status, 200);
+  const after = await call('GET', '/recurring', { token: ctx.donor });
+  assert.strictEqual(after.json.count, 2);
+  const missing = await call('POST', `/recurring/${id}/confirm`, { token: ctx.donor });
+  assert.strictEqual(missing.status, 404);
+});

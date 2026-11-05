@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
@@ -11,6 +12,9 @@ import '../../../auth/domain/user_role.dart';
 import '../../domain/app_notification.dart';
 import '../controllers/notification_providers.dart';
 
+/// Alerts tab for donors and NGOs: what happened to their donations and
+/// requests, newest first. Tapping an alert marks it read and opens the
+/// screen where the user can act on it.
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
 
@@ -19,55 +23,130 @@ class NotificationsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final session = ref.watch(sessionProvider);
     final isDonor = session?.role == UserRole.donor;
-    final notificationsAsync = ref.watch(notificationsProvider);
+    final feedAsync = ref.watch(notificationsProvider);
+    final unread = ref.watch(unreadAlertsCountProvider);
 
     return RoleScaffold(
       currentIndex: 3,
       tabs: isDonor ? donorTabs(l10n) : receiverTabs(l10n),
       appBarTitle: l10n.notificationsTitle,
-      body: notificationsAsync.when(
+      appBarActions: [
+        if (unread > 0)
+          TextButton(
+            key: const Key('markAllReadButton'),
+            onPressed: () => _markAllRead(context, ref),
+            child: const Text('Mark all read'),
+          ),
+      ],
+      body: feedAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => AsyncErrorView(
           error: err,
           onRetry: () => ref.invalidate(notificationsProvider),
         ),
-        data: (notifications) {
-          if (notifications.isEmpty) {
-            return Center(
-              child: SsEmptyState(
-                title: l10n.notificationsEmptyTitle,
-                message: l10n.notificationsEmptyMessage,
-                illustration: SsIllustrations.nothingHereYet,
+        data: (feed) {
+          if (feed.items.isEmpty) {
+            return RefreshIndicator(
+              onRefresh: () => ref.refresh(notificationsProvider.future),
+              child: ListView(
+                children: [
+                  const SizedBox(height: SsSpacing.xxl),
+                  SsEmptyState(
+                    title: l10n.notificationsEmptyTitle,
+                    message: l10n.notificationsEmptyMessage,
+                    illustration: SsIllustrations.nothingHereYet,
+                  ),
+                ],
               ),
             );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.all(SsSpacing.lg),
-            itemCount: notifications.length,
-            separatorBuilder: (_, _) => const SizedBox(height: SsSpacing.sm),
-            itemBuilder: (context, i) {
-              final n = notifications[i];
-              return SsNotificationTile(
-                title: n.title,
-                body: n.body,
-                timeAgo: _relativeTime(n.createdAt, l10n),
-                unread: !n.read,
-                tone: switch (n.tone) {
-                  NotificationTone.success => SsNotificationTone.success,
-                  NotificationTone.warning => SsNotificationTone.warning,
-                  NotificationTone.info => SsNotificationTone.neutral,
-                },
-                icon: switch (n.tone) {
-                  NotificationTone.success => SsIcons.check,
-                  NotificationTone.warning => SsIcons.alert,
-                  NotificationTone.info => SsIcons.bell,
-                },
-                onTap: () =>
-                    ref.read(notificationRepositoryProvider).markRead(n.id),
-              );
-            },
+
+          return RefreshIndicator(
+            onRefresh: () => ref.refresh(notificationsProvider.future),
+            child: ListView.separated(
+              padding: const EdgeInsets.all(SsSpacing.lg),
+              itemCount: feed.items.length,
+              separatorBuilder: (_, _) => const SizedBox(height: SsSpacing.sm),
+              itemBuilder: (context, i) {
+                final n = feed.items[i];
+                return SsNotificationTile(
+                  title: n.title,
+                  body: n.body,
+                  timeAgo: _relativeTime(n.createdAt, l10n),
+                  unread: !n.read,
+                  tone: switch (n.tone) {
+                    NotificationTone.success => SsNotificationTone.success,
+                    NotificationTone.warning => SsNotificationTone.warning,
+                    NotificationTone.info => SsNotificationTone.neutral,
+                  },
+                  icon: switch (n.tone) {
+                    NotificationTone.success => SsIcons.check,
+                    NotificationTone.warning => SsIcons.alert,
+                    NotificationTone.info => SsIcons.bell,
+                  },
+                  onTap: () => _open(context, ref, n, isDonor: isDonor),
+                );
+              },
+            ),
           );
         },
+      ),
+    );
+  }
+
+  Future<void> _markAllRead(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(notificationRepositoryProvider).markAllRead();
+    } catch (error) {
+      if (context.mounted) _showError(context, error);
+    }
+    ref.invalidate(notificationsProvider);
+  }
+
+  Future<void> _open(
+    BuildContext context,
+    WidgetRef ref,
+    AppNotification n, {
+    required bool isDonor,
+  }) async {
+    if (!n.read) {
+      try {
+        await ref.read(notificationRepositoryProvider).markRead(n.id);
+      } catch (_) {
+        // Opening the related screen matters more than the read flag.
+      }
+      ref.invalidate(notificationsProvider);
+    }
+
+    if (!context.mounted) return;
+
+    final donationId = n.donationId;
+
+    if (isDonor) {
+      if (donationId != null && donationId.isNotEmpty) {
+        context.pushNamed(
+          'donorDonationDetail',
+          pathParameters: {'id': donationId},
+        );
+      }
+      return;
+    }
+
+    switch (n.type) {
+      case 'reduced_offer' || 'request_approved':
+        context.goNamed('receiverRequests');
+      case 'request_rejected' || 'request_closed' || 'pickup_completed':
+        context.goNamed('receiverHistory');
+      case 'ngo_verified':
+        context.goNamed('receiverFeed');
+    }
+  }
+
+  void _showError(BuildContext context, Object error) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(error.toString().replaceFirst('Exception: ', '')),
+        backgroundColor: Colors.red,
       ),
     );
   }
