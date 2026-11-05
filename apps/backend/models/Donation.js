@@ -36,6 +36,35 @@ const donationSchema = new mongoose.Schema(
       default: null,
     },
 
+    // What kind of food this is (used for display and filtering)
+    foodCategory: {
+      type: String,
+      enum: [
+        'cooked_meal',
+        'bakery',
+        'fruits_vegetables',
+        'dairy',
+        'groceries',
+        'beverages',
+        'other',
+      ],
+      default: 'other',
+    },
+
+    dietType: {
+      type: String,
+      enum: ['veg', 'non_veg'],
+      default: null,
+    },
+
+    // Time after which the food is no longer safe to eat.
+    // Optional in the schema so donations created before this field
+    // existed stay valid; the create API requires it.
+    expiresAt: {
+      type: Date,
+      default: null,
+    },
+
     // Original quantity posted by the donor
     portions: {
       type: Number,

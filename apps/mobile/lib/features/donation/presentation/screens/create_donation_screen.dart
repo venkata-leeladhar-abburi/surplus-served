@@ -1,4 +1,6 @@
+import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,17 +8,18 @@ import 'package:ss_design_system/ss_design_system.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
+import '../../../../shared/utils/food_labels.dart';
 import '../../../../shared/widgets/connectivity_banner.dart';
 import '../../domain/donation.dart';
 import '../controllers/donation_providers.dart';
 
 List<String> _steps(AppLocalizations l10n) => [
-      l10n.donorCreateStepDetails,
-      l10n.donorCreateStepPortions,
-      l10n.donorCreateStepWindow,
-      l10n.donorCreateStepAddress,
-      l10n.donorCreateStepReview,
-    ];
+  l10n.donorCreateStepDetails,
+  l10n.donorCreateStepPortions,
+  l10n.donorCreateStepWindow,
+  l10n.donorCreateStepAddress,
+  l10n.donorCreateStepReview,
+];
 
 class CreateDonationScreen extends ConsumerStatefulWidget {
   const CreateDonationScreen({super.key});
@@ -26,8 +29,7 @@ class CreateDonationScreen extends ConsumerStatefulWidget {
       _CreateDonationScreenState();
 }
 
-class _CreateDonationScreenState
-    extends ConsumerState<CreateDonationScreen> {
+class _CreateDonationScreenState extends ConsumerState<CreateDonationScreen> {
   int _step = 0;
   bool _posting = false;
 
@@ -38,13 +40,77 @@ class _CreateDonationScreenState
 
   Duration _window = const Duration(hours: 2);
 
+  String _foodCategory = 'cooked_meal';
+  String? _dietType;
+
+  /// How many hours from now the food stays safe to eat.
+  /// Must be at least the pickup window (the backend enforces this too).
+  int _safeHours = 4;
+
+  String? _imagePath;
+  String? _imageName;
+
+  static const _safeHourOptions = [2, 4, 6, 12, 24];
+  static const _maxImageBytes = 5 * 1024 * 1024;
+
+  void _setWindow(int hours) {
+    setState(() {
+      _window = Duration(hours: hours);
+      if (_safeHours < hours) {
+        _safeHours = _safeHourOptions.firstWhere((h) => h >= hours);
+      }
+    });
+  }
+
+  Future<void> _pickPhoto() async {
+    try {
+      final file = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+        compressionQuality: 70,
+      );
+
+      if (file == null || !mounted) return;
+
+      if (file.path == null) {
+        throw Exception('Unable to access the selected photo.');
+      }
+
+      final size = await file.length() ?? 0;
+
+      if (!mounted) return;
+
+      if (size > _maxImageBytes) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Photo must be 5 MB or smaller.')),
+        );
+        return;
+      }
+
+      setState(() {
+        _imagePath = file.path;
+        _imageName = file.name;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Unable to select photo: '
+            '${e.toString().replaceAll('Exception: ', '')}',
+          ),
+        ),
+      );
+    }
+  }
+
   bool get _canAdvance => switch (_step) {
-        0 => _titleController.text.trim().isNotEmpty,
-        1 => (int.tryParse(_portionsController.text) ?? 0) > 0,
-        2 => true,
-        3 => _localityController.text.trim().isNotEmpty,
-        _ => true,
-      };
+    0 => _titleController.text.trim().isNotEmpty,
+    1 => (int.tryParse(_portionsController.text) ?? 0) > 0,
+    2 => true,
+    3 => _localityController.text.trim().isNotEmpty,
+    _ => true,
+  };
 
   @override
   void dispose() {
@@ -58,9 +124,7 @@ class _CreateDonationScreenState
   Future<void> _post() async {
     final session = ref.read(sessionProvider);
 
-    if (session == null ||
-        session.token == null ||
-        session.token!.isEmpty) {
+    if (session == null || session.token == null || session.token!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Your session has expired. Please log in again.'),
@@ -97,9 +161,11 @@ class _CreateDonationScreenState
             portions: portions,
             pickupWindowStart: now,
             pickupWindowEnd: now.add(_window),
-            address: PickupAddress(
-              locality: _localityController.text.trim(),
-            ),
+            address: PickupAddress(locality: _localityController.text.trim()),
+            expiresAt: now.add(Duration(hours: _safeHours)),
+            foodCategory: _foodCategory,
+            dietType: _dietType,
+            imagePath: _imagePath,
             authToken: session.token,
           );
 
@@ -185,11 +251,15 @@ class _CreateDonationScreenState
     );
   }
 
-  Widget _buildStep(
-    SsColors c,
-    AppLocalizations l10n,
-    List<String> steps,
-  ) {
+  Widget _label(SsColors c, String text) => Padding(
+    padding: const EdgeInsets.only(bottom: SsSpacing.sm),
+    child: Text(
+      text,
+      style: SsTypeScale.small.copyWith(color: c.onSurfaceVariant),
+    ),
+  );
+
+  Widget _buildStep(SsColors c, AppLocalizations l10n, List<String> steps) {
     switch (_step) {
       case 0:
         return SingleChildScrollView(
@@ -214,6 +284,62 @@ class _CreateDonationScreenState
                 controller: _descriptionController,
                 maxLines: 3,
               ),
+              const SizedBox(height: SsSpacing.lg),
+              _label(c, 'Food type'),
+              Wrap(
+                spacing: SsSpacing.sm,
+                runSpacing: SsSpacing.sm,
+                children: [
+                  for (final entry in FoodLabels.categories.entries)
+                    ChoiceChip(
+                      label: Text(entry.value),
+                      selected: _foodCategory == entry.key,
+                      onSelected: (_) =>
+                          setState(() => _foodCategory = entry.key),
+                    ),
+                ],
+              ),
+              const SizedBox(height: SsSpacing.lg),
+              _label(c, 'Veg or non-veg (optional)'),
+              Wrap(
+                spacing: SsSpacing.sm,
+                children: [
+                  for (final entry in FoodLabels.diets.entries)
+                    ChoiceChip(
+                      label: Text(entry.value),
+                      selected: _dietType == entry.key,
+                      onSelected: (selected) => setState(
+                        () => _dietType = selected ? entry.key : null,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: SsSpacing.lg),
+              _label(c, 'Photo (optional)'),
+              if (_imagePath != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(SsRadius.md),
+                  child: Image.file(
+                    File(_imagePath!),
+                    height: 160,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, _, _) => Text(_imageName ?? ''),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => setState(() {
+                    _imagePath = null;
+                    _imageName = null;
+                  }),
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Remove photo'),
+                ),
+              ] else
+                OutlinedButton.icon(
+                  onPressed: _pickPhoto,
+                  icon: const Icon(Icons.add_a_photo_outlined),
+                  label: const Text('Add a photo of the food'),
+                ),
             ],
           ),
         );
@@ -240,9 +366,7 @@ class _CreateDonationScreenState
               Center(
                 child: Text(
                   'Enter the total number of portions available',
-                  style: SsTypeScale.body.copyWith(
-                    color: c.onSurfaceVariant,
-                  ),
+                  style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
                 ),
               ),
             ],
@@ -250,33 +374,48 @@ class _CreateDonationScreenState
         );
 
       case 2:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              steps[2],
-              style: SsTypeScale.h3.copyWith(color: c.onSurface),
-            ),
-            const SizedBox(height: SsSpacing.sm),
-            Text(
-              l10n.donorCreateWindowSubtitle,
-              style: SsTypeScale.body.copyWith(
-                color: c.onSurfaceVariant,
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                steps[2],
+                style: SsTypeScale.h3.copyWith(color: c.onSurface),
               ),
-            ),
-            const SizedBox(height: SsSpacing.lg),
-            for (final hours in [1, 2, 3, 4])
-              Padding(
-                padding: const EdgeInsets.only(bottom: SsSpacing.sm),
-                child: _WindowOption(
-                  label: l10n.donorCreateWindowOption(hours),
-                  selected: _window.inHours == hours,
-                  onTap: () => setState(
-                    () => _window = Duration(hours: hours),
+              const SizedBox(height: SsSpacing.sm),
+              Text(
+                l10n.donorCreateWindowSubtitle,
+                style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
+              ),
+              const SizedBox(height: SsSpacing.lg),
+              for (final hours in [1, 2, 3, 4])
+                Padding(
+                  padding: const EdgeInsets.only(bottom: SsSpacing.sm),
+                  child: _WindowOption(
+                    label: l10n.donorCreateWindowOption(hours),
+                    selected: _window.inHours == hours,
+                    onTap: () => _setWindow(hours),
                   ),
                 ),
+              const SizedBox(height: SsSpacing.lg),
+              _label(c, 'Food stays safe to eat for'),
+              Wrap(
+                spacing: SsSpacing.sm,
+                runSpacing: SsSpacing.sm,
+                children: [
+                  for (final hours in _safeHourOptions)
+                    ChoiceChip(
+                      label: Text('$hours hours'),
+                      selected: _safeHours == hours,
+                      // Food must stay safe until pickup ends.
+                      onSelected: hours < _window.inHours
+                          ? null
+                          : (_) => setState(() => _safeHours = hours),
+                    ),
+                ],
               ),
-          ],
+            ],
+          ),
         );
 
       case 3:
@@ -291,9 +430,7 @@ class _CreateDonationScreenState
               const SizedBox(height: SsSpacing.sm),
               Text(
                 l10n.donorCreateAddressPrivacyNote,
-                style: SsTypeScale.small.copyWith(
-                  color: c.onSurfaceVariant,
-                ),
+                style: SsTypeScale.small.copyWith(color: c.onSurfaceVariant),
               ),
               const SizedBox(height: SsSpacing.lg),
               SsTextField(
@@ -328,9 +465,20 @@ class _CreateDonationScreenState
               ),
               _ReviewRow(
                 label: l10n.donorCreateReviewWindowLabel,
-                value: l10n.donorCreateReviewWindowValue(
-                  _window.inHours,
-                ),
+                value: l10n.donorCreateReviewWindowValue(_window.inHours),
+              ),
+              _ReviewRow(label: 'Food safe for', value: '$_safeHours hours'),
+              _ReviewRow(
+                label: 'Food type',
+                value: [
+                  FoodLabels.category(_foodCategory),
+                  if (FoodLabels.diet(_dietType) != null)
+                    FoodLabels.diet(_dietType)!,
+                ].join(' · '),
+              ),
+              _ReviewRow(
+                label: 'Photo',
+                value: _imagePath != null ? 'Added' : 'None',
               ),
               _ReviewRow(
                 label: l10n.donorCreateReviewLocalityLabel,
@@ -372,9 +520,7 @@ class _WindowOption extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(SsSpacing.md),
           decoration: BoxDecoration(
-            border: Border.all(
-              color: selected ? c.primary : c.border,
-            ),
+            border: Border.all(color: selected ? c.primary : c.border),
             borderRadius: BorderRadius.circular(SsRadius.md),
           ),
           child: Row(
@@ -388,13 +534,11 @@ class _WindowOption extends StatelessWidget {
                 label,
                 style: SsTypeScale.body.copyWith(
                   color: selected ? c.onPrimaryContainer : c.onSurface,
-                  fontWeight:
-                      selected ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
               const Spacer(),
-              if (selected)
-                SsIcon(SsIcons.check, color: c.primary),
+              if (selected) SsIcon(SsIcons.check, color: c.primary),
             ],
           ),
         ),
@@ -404,10 +548,7 @@ class _WindowOption extends StatelessWidget {
 }
 
 class _ReviewRow extends StatelessWidget {
-  const _ReviewRow({
-    required this.label,
-    required this.value,
-  });
+  const _ReviewRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -423,9 +564,7 @@ class _ReviewRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: SsTypeScale.body.copyWith(
-                color: c.onSurfaceVariant,
-              ),
+              style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
             ),
           ),
           Expanded(

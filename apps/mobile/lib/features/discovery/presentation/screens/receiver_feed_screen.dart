@@ -39,27 +39,31 @@ class ReceiverFeedScreen extends ConsumerWidget {
               ),
             );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.all(SsSpacing.lg),
-            itemCount: donations.length,
-            separatorBuilder: (_, _) => const SizedBox(height: SsSpacing.md),
-            itemBuilder: (context, i) {
-              final d = donations[i];
-              return SsDonationCard(
-                title: d.title,
-                donorName: d.donorName,
-                imageUrl: null,
-                status: d.status.ssStatus,
-                statusLabel: d.status.label(l10n),
-                servingsLabel: l10n.commonPortionsLabel(d.portions),
-                timeLeftLabel: _timeLeftLabel(d, l10n),
-                distanceLabel: d.address.locality,
-                onTap: () => context.pushNamed(
-                  'receiverDonationDetail',
-                  pathParameters: {'id': d.id},
-                ),
-              );
-            },
+          return RefreshIndicator(
+            onRefresh: () => ref.refresh(receiverFeedProvider.future),
+            child: ListView.separated(
+              padding: const EdgeInsets.all(SsSpacing.lg),
+              itemCount: donations.length,
+              separatorBuilder: (_, _) => const SizedBox(height: SsSpacing.md),
+              itemBuilder: (context, i) {
+                final d = donations[i];
+                return SsDonationCard(
+                  title: d.title,
+                  donorName: d.donorName,
+                  imageUrl: d.imageUrl,
+                  isVegetarian: d.dietType == null ? null : d.dietType == 'veg',
+                  status: d.status.ssStatus,
+                  statusLabel: d.status.label(l10n),
+                  servingsLabel: l10n.commonPortionsLabel(d.portions),
+                  timeLeftLabel: _timeLeftLabel(d, l10n),
+                  distanceLabel: d.address.locality,
+                  onTap: () => context.pushNamed(
+                    'receiverDonationDetail',
+                    pathParameters: {'id': d.id},
+                  ),
+                );
+              },
+            ),
           );
         },
       ),

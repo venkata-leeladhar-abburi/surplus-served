@@ -59,11 +59,34 @@ class DonorDashboardScreen extends ConsumerWidget {
               ),
             );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.all(SsSpacing.lg),
-            itemCount: donations.length,
-            separatorBuilder: (_, _) => const SizedBox(height: SsSpacing.md),
-            itemBuilder: (context, i) => _DonationRow(donation: donations[i]),
+          // Requests waiting for this donor's decision, per donation.
+          final pendingByDonation = <String, int>{};
+          for (final a in ref.watch(donorAllocationsProvider).value ?? const []) {
+            if (a.status == 'pending_donor') {
+              pendingByDonation.update(
+                a.donationId,
+                (n) => n + 1,
+                ifAbsent: () => 1,
+              );
+            }
+          }
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(donorAllocationsProvider);
+              ref.invalidate(donorDonationsProvider);
+              await ref.read(donorDonationsProvider.future);
+            },
+            child: ListView.separated(
+              padding: const EdgeInsets.all(SsSpacing.lg),
+              itemCount: donations.length,
+              separatorBuilder: (_, _) =>
+                  const SizedBox(height: SsSpacing.md),
+              itemBuilder: (context, i) => _DonationRow(
+                donation: donations[i],
+                pendingRequests: pendingByDonation[donations[i].id] ?? 0,
+              ),
+            ),
           );
         },
       ),
@@ -72,9 +95,12 @@ class DonorDashboardScreen extends ConsumerWidget {
 }
 
 class _DonationRow extends StatelessWidget {
-  const _DonationRow({required this.donation});
+  const _DonationRow({required this.donation, this.pendingRequests = 0});
 
   final Donation donation;
+
+  /// NGO requests waiting for the donor to approve or reject.
+  final int pendingRequests;
 
   @override
   Widget build(BuildContext context) {
@@ -112,6 +138,16 @@ class _DonationRow extends StatelessWidget {
                         color: c.onSurfaceVariant,
                       ),
                     ),
+                    if (pendingRequests > 0) ...[
+                      const SizedBox(height: SsSpacing.xs),
+                      SsTag(
+                        label: pendingRequests == 1
+                            ? '1 NGO request to review'
+                            : '$pendingRequests NGO requests to review',
+                        icon: SsIcons.bell,
+                        tone: SsTagTone.warm,
+                      ),
+                    ],
                   ],
                 ),
               ),

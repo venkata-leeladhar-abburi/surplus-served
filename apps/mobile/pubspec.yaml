@@ -14,6 +14,8 @@ dependencies:
   http: ^1.2.0
   http_parser: ^4.0.2
   file_picker: ^13.3.2
+  # Opens NGO certificate PDFs for the admin (official flutter.dev plugin).
+  url_launcher: ^6.3.1
 
   flutter_localizations:
     sdk: flutter

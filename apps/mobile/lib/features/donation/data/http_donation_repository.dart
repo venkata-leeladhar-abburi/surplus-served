@@ -2,6 +2,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../domain/donation.dart';
 import '../domain/donation_status.dart';
@@ -155,7 +156,8 @@ class HttpDonationRepository implements DonationRepository {
     }
   }
 
-  // Create a donation.
+  // Create a donation. Sends multipart/form-data when a photo is
+  // attached (field "image"), plain JSON otherwise.
   @override
   Future<Donation> create({
     required String donorId,
@@ -166,25 +168,61 @@ class HttpDonationRepository implements DonationRepository {
     required DateTime pickupWindowStart,
     required DateTime pickupWindowEnd,
     required PickupAddress address,
+    required DateTime expiresAt,
+    String foodCategory = 'other',
+    String? dietType,
+    String? imagePath,
     String? authToken,
   }) async {
+    final fields = <String, String>{
+      'title': title,
+      'description': ?description,
+      'portions': '$portions',
+      'pickupWindowStart': pickupWindowStart.toUtc().toIso8601String(),
+      'pickupWindowEnd': pickupWindowEnd.toUtc().toIso8601String(),
+      'expiresAt': expiresAt.toUtc().toIso8601String(),
+      'foodCategory': foodCategory,
+      'dietType': ?dietType,
+    };
+
+    final addressJson = {'locality': address.locality};
+
     try {
-      final response = await _client.post(
-        Uri.parse(_baseUrl),
-        headers: _headers(authToken),
-        body: jsonEncode({
-          'donorId': donorId,
-          'donorName': donorName,
-          'title': title,
-          'description': description,
-          'portions': portions,
-          'pickupWindowStart': pickupWindowStart.toUtc().toIso8601String(),
-          'pickupWindowEnd': pickupWindowEnd.toUtc().toIso8601String(),
-          'address': {
-            'locality': address.locality,
-          },
-        }),
-      ).timeout(const Duration(seconds: 30));
+      final http.Response response;
+
+      if (imagePath != null && imagePath.isNotEmpty) {
+        final request = http.MultipartRequest('POST', Uri.parse(_baseUrl))
+          ..fields.addAll(fields)
+          // Multipart fields are strings; the backend parses this JSON.
+          ..fields['address'] = jsonEncode(addressJson)
+          ..files.add(
+            await http.MultipartFile.fromPath(
+              'image',
+              imagePath,
+              contentType: _imageContentType(imagePath),
+            ),
+          );
+
+        if (authToken != null && authToken.isNotEmpty) {
+          request.headers['Authorization'] = 'Bearer $authToken';
+        }
+
+        final streamed =
+            await _client.send(request).timeout(const Duration(seconds: 60));
+        response = await http.Response.fromStream(streamed);
+      } else {
+        response = await _client
+            .post(
+              Uri.parse(_baseUrl),
+              headers: _headers(authToken),
+              body: jsonEncode({
+                ...fields,
+                'portions': portions,
+                'address': addressJson,
+              }),
+            )
+            .timeout(const Duration(seconds: 30));
+      }
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
@@ -208,6 +246,17 @@ class HttpDonationRepository implements DonationRepository {
         '${e.toString().replaceAll('Exception: ', '')}',
       );
     }
+  }
+
+  MediaType _imageContentType(String path) {
+    final ext = path.split('.').last.toLowerCase();
+
+    return switch (ext) {
+      'jpg' || 'jpeg' => MediaType('image', 'jpeg'),
+      'png' => MediaType('image', 'png'),
+      'webp' => MediaType('image', 'webp'),
+      _ => throw Exception('Only JPG, PNG and WEBP photos are allowed.'),
+    };
   }
 
   // Cancel a donation.
@@ -264,6 +313,13 @@ class HttpDonationRepository implements DonationRepository {
       title: json['title']?.toString() ?? '',
       description: json['description']?.toString(),
       portions: (json['portions'] as num?)?.toInt() ?? 0,
+      remainingPortions: (json['remainingPortions'] as num?)?.toInt(),
+      imageUrl: json['imageUrl']?.toString(),
+      foodCategory: json['foodCategory']?.toString() ?? 'other',
+      dietType: json['dietType']?.toString(),
+      expiresAt: json['expiresAt'] != null
+          ? DateTime.tryParse(json['expiresAt'].toString())
+          : null,
       status: _mapStatus(json['status']),
       pickupWindowStart: json['pickupWindowStart'] != null
           ? DateTime.parse(json['pickupWindowStart'].toString())

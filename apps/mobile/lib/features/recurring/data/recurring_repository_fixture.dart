@@ -83,6 +83,7 @@ class RecurringRepositoryFixture implements RecurringRepository {
         Duration(hours: template.windowHours),
       ),
       address: PickupAddress(locality: template.locality),
+      expiresAt: DateTime.now().add(Duration(hours: template.windowHours)),
     );
     _put(template.copyWith(confirmedToday: true));
   }

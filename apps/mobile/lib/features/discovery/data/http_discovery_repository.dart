@@ -133,6 +133,15 @@ class HttpDiscoveryRepository implements DiscoveryRepository {
       title: json['title']?.toString() ?? '',
       description: json['description']?.toString(),
       portions: _toInt(json['remainingPortions'] ?? json['portions']),
+      remainingPortions: json['remainingPortions'] == null
+          ? null
+          : _toInt(json['remainingPortions']),
+      imageUrl: json['imageUrl']?.toString(),
+      foodCategory: json['foodCategory']?.toString() ?? 'other',
+      dietType: json['dietType']?.toString(),
+      expiresAt: json['expiresAt'] != null
+          ? DateTime.tryParse(json['expiresAt'].toString())
+          : null,
       status: _mapStatus(json['status']),
       pickupWindowStart: DateTime.parse(
         json['pickupWindowStart'].toString(),

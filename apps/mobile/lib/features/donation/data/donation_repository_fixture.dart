@@ -8,7 +8,10 @@ class DonationRepositoryFixture implements DonationRepository {
   final FixtureStore _store;
 
   @override
-  Stream<List<Donation>> watchDonorDonations(String donorId) {
+  Stream<List<Donation>> watchDonorDonations(
+    String donorId, {
+    String? authToken,
+  }) {
     return _store.watchAll().map(
       (all) =>
           all.where((d) => d.donorId == donorId).toList()
@@ -17,7 +20,7 @@ class DonationRepositoryFixture implements DonationRepository {
   }
 
   @override
-  Future<Donation> getById(String id) async => _store.getById(id);
+  Future<Donation> getById(String id, {String? authToken}) async => _store.getById(id);
 
   @override
   Future<Donation> create({
@@ -29,6 +32,11 @@ class DonationRepositoryFixture implements DonationRepository {
     required DateTime pickupWindowStart,
     required DateTime pickupWindowEnd,
     required PickupAddress address,
+    required DateTime expiresAt,
+    String foodCategory = 'other',
+    String? dietType,
+    String? imagePath,
+    String? authToken,
   }) async {
     return _store.create(
       donorId: donorId,
@@ -43,5 +51,5 @@ class DonationRepositoryFixture implements DonationRepository {
   }
 
   @override
-  Future<void> cancel(String id) async => _store.cancel(id);
+  Future<void> cancel(String id, {String? authToken}) async => _store.cancel(id);
 }

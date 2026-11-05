@@ -9,8 +9,12 @@ import '../../../../core/providers.dart';
 import '../../../../shared/utils/status_mapper.dart';
 import '../../../../shared/widgets/async_error_view.dart';
 import '../../../../shared/widgets/connectivity_banner.dart';
+import '../../../../shared/widgets/donation_food_details.dart';
+import '../../../../shared/widgets/text_input_dialog.dart';
 import '../../../donation/domain/donation_status.dart';
 import '../../../donation/presentation/controllers/donation_providers.dart';
+import '../controllers/discovery_providers.dart';
+import '../controllers/receiver_donations_providers.dart';
 
 class DonationDetailScreen extends ConsumerStatefulWidget {
   const DonationDetailScreen({super.key, required this.donationId});
@@ -42,6 +46,10 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
       return;
     }
 
+    final requestedPortions = await _askPortions(availablePortions);
+
+    if (requestedPortions == null || !mounted) return;
+
     setState(() => _requesting = true);
 
     try {
@@ -49,12 +57,14 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
             donationId: widget.donationId,
             ngoId: session.userId,
             ngoName: session.name,
-            requestedPortions: availablePortions,
+            requestedPortions: requestedPortions,
           );
 
       if (!mounted) return;
 
       ref.invalidate(donationByIdProvider(widget.donationId));
+      ref.invalidate(receiverAllocationsProvider);
+      ref.invalidate(receiverFeedProvider);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -76,6 +86,27 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
         setState(() => _requesting = false);
       }
     }
+  }
+
+  /// Asks how many portions to request (1 to [maxPortions]).
+  /// Returns null if the NGO cancels.
+  Future<int?> _askPortions(int maxPortions) async {
+    final text = await showTextInputDialog(
+      context,
+      title: 'How many portions?',
+      helperText: '$maxPortions portion(s) available',
+      initialText: '$maxPortions',
+      keyboardType: TextInputType.number,
+      confirmLabel: 'Request',
+      validator: (v) {
+        final value = int.tryParse(v);
+        return value == null || value < 1 || value > maxPortions
+            ? 'Enter a number from 1 to $maxPortions.'
+            : null;
+      },
+    );
+
+    return text == null ? null : int.tryParse(text);
   }
 
   @override
@@ -119,6 +150,7 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      DonationFoodDetails(donation: donation),
                       Row(
                         children: [
                           Expanded(
@@ -155,7 +187,9 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
                       Row(
                         children: [
                           SsTag(
-                            label: l10n.commonPortionsLabel(donation.portions),
+                            label: l10n.commonPortionsLabel(
+                              donation.remainingPortions ?? donation.portions,
+                            ),
                             icon: SsIcons.meals,
                           ),
                           const SizedBox(width: SsSpacing.sm),
@@ -188,7 +222,10 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
                           isLoading: _requesting,
                           onPressed: _requesting
                               ? null
-                              : () => _request(donation.portions),
+                              : () => _request(
+                                    donation.remainingPortions ??
+                                        donation.portions,
+                                  ),
                         ),
                     ],
                   ),

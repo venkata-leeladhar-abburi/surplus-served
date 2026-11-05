@@ -9,6 +9,9 @@ class AuthRepositoryFixture implements AuthRepository {
     required String email,
     required String password,
     required UserRole role,
+    String? organizationName,
+    String? registrationNumber,
+    String? certificatePath,
   }) async {
     return Session(
       userId: 'mock_user_123',

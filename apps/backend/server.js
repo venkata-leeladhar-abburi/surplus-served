@@ -2,6 +2,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const multer = require('multer');
 
 const connectDB = require('./config/db');
 
@@ -41,6 +42,22 @@ app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
     return res.status(400).json({
       message: 'Invalid JSON request body.',
+    });
+  }
+
+  // File upload problems (wrong type, too large) are the client's to fix.
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({
+      message:
+        err.code === 'LIMIT_FILE_SIZE'
+          ? 'File must be 5 MB or smaller.'
+          : 'Invalid file upload.',
+    });
+  }
+
+  if (err.status === 400) {
+    return res.status(400).json({
+      message: err.message,
     });
   }
 

@@ -22,6 +22,7 @@ void main() {
       pickupWindowStart: DateTime.now(),
       pickupWindowEnd: DateTime.now().add(const Duration(hours: 1)),
       address: const PickupAddress(locality: 'Test Locality'),
+      expiresAt: DateTime.now().add(const Duration(hours: 2)),
     );
     expect(donation.status, DonationStatus.live);
     expect(donation.address.hasExactDetails, isFalse); // §11 masked while live
@@ -30,6 +31,7 @@ void main() {
       donationId: donation.id,
       ngoId: 'ngo-test',
       ngoName: 'Test NGO',
+      requestedPortions: 10,
     );
     expect(allocated.status, DonationStatus.allocated);
     expect(allocated.pickupCode, hasLength(4));
