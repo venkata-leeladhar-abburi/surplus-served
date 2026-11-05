@@ -12,6 +12,7 @@ import 'package:surplus_served_mobile/features/discovery/presentation/screens/my
 import 'package:surplus_served_mobile/features/donation/domain/donation.dart';
 import 'package:surplus_served_mobile/features/donation/domain/donation_status.dart';
 import 'package:surplus_served_mobile/shared/utils/allocation_status_mapper.dart';
+import 'package:surplus_served_mobile/shared/utils/directions.dart';
 
 class _RecordingAllocationRepository implements AllocationRepository {
   final offers = <(String, bool)>[];
@@ -33,6 +34,11 @@ ReceiverAllocation _item(
   String? pickupCode,
   int requested = 10,
   int? offered,
+  String? pickupAddress,
+  String? contactPhone,
+  String? contactName,
+  double? latitude,
+  double? longitude,
 }) =>
     ReceiverAllocation(
       allocation: Allocation(
@@ -43,6 +49,11 @@ ReceiverAllocation _item(
         requestedPortions: requested,
         offeredPortions: offered,
         pickupCode: pickupCode,
+        pickupAddress: pickupAddress,
+        contactPhone: contactPhone,
+        contactName: contactName,
+        pickupLatitude: latitude,
+        pickupLongitude: longitude,
       ),
       donation: Donation(
         id: 'd$id',
@@ -116,6 +127,60 @@ void main() {
     expect(find.text('Meal 2'), findsOneWidget);
     expect(find.text('Awaiting donor'), findsOneWidget);
     expect(find.text('Meal 3'), findsNothing); // finished -> History tab
+  });
+
+  testWidgets('approved request shows the donor address and phone',
+      (tester) async {
+    await _pump(tester, [
+      _item(
+        '1',
+        'approved',
+        pickupCode: '123456',
+        pickupAddress: 'Flat 4, Green Towers, Ameerpet, Hyderabad',
+        contactPhone: '9876543210',
+        contactName: 'Ravi',
+      ),
+    ]);
+
+    expect(find.text('Pickup address'), findsOneWidget);
+    expect(
+      find.text('Flat 4, Green Towers, Ameerpet, Hyderabad'),
+      findsOneWidget,
+    );
+    expect(find.text('Ravi · 9876543210'), findsOneWidget);
+    expect(find.text('Call'), findsOneWidget);
+    expect(find.text('Directions'), findsOneWidget);
+  });
+
+  testWidgets('pinned location shows exact-pin directions', (tester) async {
+    await _pump(tester, [
+      _item(
+        '1',
+        'approved',
+        pickupCode: '123456',
+        pickupAddress: 'Flat 4, Green Towers, Ameerpet, Hyderabad',
+        contactPhone: '9876543210',
+        latitude: 17.4375,
+        longitude: 78.4482,
+      ),
+    ]);
+
+    expect(find.text('Directions (exact pin)'), findsOneWidget);
+  });
+
+  test('directions link uses the pin when there is one, else the address',
+      () {
+    final pinned = pickupDirectionsUri(
+      address: 'Ameerpet',
+      latitude: 17.4375,
+      longitude: 78.4482,
+    );
+    expect(pinned.host, 'www.google.com');
+    expect(pinned.queryParameters['destination'], '17.4375,78.4482');
+
+    final byAddress = pickupDirectionsUri(address: 'Flat 4, Ameerpet');
+    expect(byAddress.queryParameters['destination'], 'Flat 4, Ameerpet');
+    expect(byAddress.queryParameters['api'], '1');
   });
 
   testWidgets('NGO can accept a reduced-quantity offer', (tester) async {

@@ -6,6 +6,7 @@ import 'package:ss_design_system/ss_design_system.dart';
 import '../../../../core/providers.dart';
 import '../../../allocation/domain/allocation.dart';
 import '../controllers/donation_providers.dart';
+import 'pickup_details_dialog.dart';
 
 /// Shows every NGO request for one donation and lets the donor act on it.
 ///
@@ -41,18 +42,31 @@ class _DonorRequestsSectionState extends ConsumerState<DonorRequestsSection> {
     final ngoName = allocation.ngoName ?? 'this NGO';
     final portions = allocation.offeredPortions ?? allocation.requestedPortions;
 
-    final confirmed = await SsDialog.confirm(
-      context,
-      title: approve ? 'Approve request?' : 'Reject request?',
-      message: approve
-          ? '$ngoName will receive $portions portion(s) and get a pickup code.'
-          : 'The request from $ngoName will be rejected and the next NGO '
-              'in the queue will be considered.',
-      confirmLabel: approve ? 'Approve' : 'Reject',
-      destructive: !approve,
-    );
+    PickupDetails? details;
 
-    if (confirmed != true || !mounted) return;
+    if (approve) {
+      // The donor shares the full address and phone with this NGO only.
+      details = await showPickupDetailsDialog(
+        context,
+        ngoName: ngoName,
+        portions: portions,
+        getLocation: ref.read(pickupLocationFetcherProvider),
+        initial: _lastPickupDetails(),
+      );
+
+      if (details == null || !mounted) return;
+    } else {
+      final confirmed = await SsDialog.confirm(
+        context,
+        title: 'Reject request?',
+        message: 'The request from $ngoName will be rejected and the next '
+            'NGO in the queue will be considered.',
+        confirmLabel: 'Reject',
+        destructive: true,
+      );
+
+      if (confirmed != true || !mounted) return;
+    }
 
     setState(() => _busyAllocationId = allocation.id);
 
@@ -60,7 +74,14 @@ class _DonorRequestsSectionState extends ConsumerState<DonorRequestsSection> {
       final repository = ref.read(allocationRepositoryProvider);
 
       if (approve) {
-        await repository.approveAllocation(allocationId: allocation.id);
+        await repository.approveAllocation(
+          allocationId: allocation.id,
+          pickupAddress: details!.address,
+          contactPhone: details.phone,
+          contactName: details.contactName,
+          pickupLatitude: details.latitude,
+          pickupLongitude: details.longitude,
+        );
       } else {
         await repository.rejectAllocation(allocationId: allocation.id);
       }
@@ -93,6 +114,28 @@ class _DonorRequestsSectionState extends ConsumerState<DonorRequestsSection> {
         _refreshAll();
       }
     }
+  }
+
+  /// Pre-fills the approval form with the details from the donor's most
+  /// recent approval, so they don't retype their address every time.
+  PickupDetails? _lastPickupDetails() {
+    final allocations = ref.read(donorAllocationsProvider).value ?? const [];
+
+    for (final a in allocations) {
+      final address = a.pickupAddress;
+      final phone = a.contactPhone;
+      if (address != null && address.isNotEmpty && phone != null) {
+        return PickupDetails(
+          address: address,
+          phone: phone,
+          contactName: a.contactName,
+          latitude: a.pickupLatitude,
+          longitude: a.pickupLongitude,
+        );
+      }
+    }
+
+    return null;
   }
 
   Future<void> _verifyPickup(Allocation allocation) async {
@@ -287,6 +330,14 @@ class _DonorRequestsSectionState extends ConsumerState<DonorRequestsSection> {
           'Ask the NGO for their 6-digit pickup code at handover.',
           style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
         ),
+        if (allocation.pickupAddress != null) ...[
+          const SizedBox(height: SsSpacing.sm),
+          Text(
+            'Shared with NGO: ${allocation.pickupAddress}'
+            '${allocation.contactPhone != null ? ' · ${allocation.contactPhone}' : ''}',
+            style: SsTypeScale.small.copyWith(color: c.onSurfaceVariant),
+          ),
+        ],
         const SizedBox(height: SsSpacing.md),
         ElevatedButton.icon(
           onPressed: () => _verifyPickup(allocation),

@@ -388,6 +388,61 @@ exports.approveAllocation = async (req, res) => {
       });
     }
 
+    // Full pickup address and contact number for the approved NGO.
+    const pickupAddress =
+      typeof req.body.pickupAddress === 'string'
+        ? req.body.pickupAddress.trim()
+        : '';
+    const contactPhone =
+      typeof req.body.contactPhone === 'string'
+        ? req.body.contactPhone.replace(/[\s-]/g, '')
+        : '';
+    const contactName =
+      typeof req.body.contactName === 'string' && req.body.contactName.trim()
+        ? req.body.contactName.trim().slice(0, 100)
+        : req.user.name;
+
+    if (pickupAddress.length < 10 || pickupAddress.length > 300) {
+      return res.status(400).json({
+        message: 'Please enter the complete pickup address (10-300 characters).',
+      });
+    }
+
+    if (!/^\+?\d{10,13}$/.test(contactPhone)) {
+      return res.status(400).json({
+        message: 'Please enter a valid contact phone number (10-13 digits).',
+      });
+    }
+
+    // Optional exact pickup point. Both coordinates or neither.
+    const { pickupLatitude, pickupLongitude } = req.body;
+    const hasLat = pickupLatitude !== undefined && pickupLatitude !== null;
+    const hasLng = pickupLongitude !== undefined && pickupLongitude !== null;
+    let latitude = null;
+    let longitude = null;
+
+    if (hasLat || hasLng) {
+      const validLat =
+        typeof pickupLatitude === 'number' &&
+        Number.isFinite(pickupLatitude) &&
+        pickupLatitude >= -90 &&
+        pickupLatitude <= 90;
+      const validLng =
+        typeof pickupLongitude === 'number' &&
+        Number.isFinite(pickupLongitude) &&
+        pickupLongitude >= -180 &&
+        pickupLongitude <= 180;
+
+      if (!validLat || !validLng) {
+        return res.status(400).json({
+          message: 'Invalid pickup location.',
+        });
+      }
+
+      latitude = pickupLatitude;
+      longitude = pickupLongitude;
+    }
+
     let approvedAllocation = null;
 
     await session.withTransaction(async () => {
@@ -467,6 +522,11 @@ exports.approveAllocation = async (req, res) => {
             status: 'approved',
             allocatedPortions: quantity,
             pickupCode,
+            pickupAddress,
+            contactName,
+            contactPhone,
+            pickupLatitude: latitude,
+            pickupLongitude: longitude,
             donorDecisionAt: new Date(),
           },
         },
@@ -492,6 +552,11 @@ exports.approveAllocation = async (req, res) => {
         ngoName: approvedAllocation.ngoName,
         allocatedPortions: approvedAllocation.allocatedPortions,
         status: approvedAllocation.status,
+        pickupAddress: approvedAllocation.pickupAddress,
+        contactName: approvedAllocation.contactName,
+        contactPhone: approvedAllocation.contactPhone,
+        pickupLatitude: approvedAllocation.pickupLatitude,
+        pickupLongitude: approvedAllocation.pickupLongitude,
       },
     });
   } catch (error) {

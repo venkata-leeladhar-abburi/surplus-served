@@ -8,15 +8,34 @@ import 'package:surplus_served_mobile/features/allocation/domain/allocation_repo
 import 'package:surplus_served_mobile/features/donation/domain/donation.dart';
 import 'package:surplus_served_mobile/features/donation/presentation/controllers/donation_providers.dart';
 import 'package:surplus_served_mobile/features/donation/presentation/widgets/donor_requests_section.dart';
+import 'package:surplus_served_mobile/features/donation/presentation/widgets/pickup_details_dialog.dart';
 
 /// Records which allocation endpoints the widget calls.
 class _RecordingAllocationRepository implements AllocationRepository {
   final approved = <String>[];
   final rejected = <String>[];
+  String? lastAddress;
+  String? lastPhone;
+  String? lastContactName;
+  double? lastLatitude;
+  double? lastLongitude;
 
   @override
-  Future<void> approveAllocation({required String allocationId}) async =>
-      approved.add(allocationId);
+  Future<void> approveAllocation({
+    required String allocationId,
+    required String pickupAddress,
+    required String contactPhone,
+    String? contactName,
+    double? pickupLatitude,
+    double? pickupLongitude,
+  }) async {
+    approved.add(allocationId);
+    lastAddress = pickupAddress;
+    lastPhone = contactPhone;
+    lastContactName = contactName;
+    lastLatitude = pickupLatitude;
+    lastLongitude = pickupLongitude;
+  }
 
   @override
   Future<void> rejectAllocation({required String allocationId}) async =>
@@ -48,6 +67,10 @@ Future<_RecordingAllocationRepository> _pump(
       overrides: [
         donorAllocationsProvider.overrideWith((ref) async => allocations),
         allocationRepositoryProvider.overrideWithValue(repo),
+        // No real GPS in tests.
+        pickupLocationFetcherProvider.overrideWithValue(
+          () async => (latitude: 17.4375, longitude: 78.4482),
+        ),
         // Refresh after a decision re-reads these; keep them offline.
         donationByIdProvider.overrideWith(
           (ref, id) => const Stream<Donation>.empty(),
@@ -85,19 +108,87 @@ void main() {
     expect(find.textContaining('In queue'), findsOneWidget);
   });
 
-  testWidgets('approving calls the approve endpoint after confirmation',
+  testWidgets('approving sends the pickup address and phone',
       (tester) async {
     final repo = await _pump(tester, [_allocation('a1', 'pending_donor')]);
 
     await tester.tap(find.text('Approve'));
     await tester.pumpAndSettle();
 
-    // Confirmation dialog: tap its Approve button (the last one shown).
-    await tester.tap(find.text('Approve').last);
+    await tester.enterText(
+      find.byKey(const Key('pickupAddressField')),
+      'Flat 4, Green Towers, Ameerpet, Hyderabad',
+    );
+    await tester.enterText(
+      find.byKey(const Key('contactPhoneField')),
+      '98765 43210',
+    );
+    await tester.tap(find.byKey(const Key('confirmApproveButton')));
     await tester.pumpAndSettle();
 
     expect(repo.approved, ['a1']);
+    expect(repo.lastAddress, 'Flat 4, Green Towers, Ameerpet, Hyderabad');
+    expect(repo.lastPhone, '9876543210');
+    expect(repo.lastContactName, isNull);
+    expect(repo.lastLatitude, isNull); // location is optional
+    expect(repo.lastLongitude, isNull);
     expect(repo.rejected, isEmpty);
+  });
+
+  testWidgets('donor can pin the exact pickup location', (tester) async {
+    final repo = await _pump(tester, [_allocation('a1', 'pending_donor')]);
+
+    await tester.tap(find.text('Approve'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('pickupAddressField')),
+      'Flat 4, Green Towers, Ameerpet, Hyderabad',
+    );
+    await tester.enterText(
+      find.byKey(const Key('contactPhoneField')),
+      '9876543210',
+    );
+    await tester.ensureVisible(find.byKey(const Key('useLocationButton')));
+    await tester.tap(find.byKey(const Key('useLocationButton')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Exact location pinned'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('confirmApproveButton')));
+    await tester.pumpAndSettle();
+
+    expect(repo.approved, ['a1']);
+    expect(repo.lastLatitude, 17.4375);
+    expect(repo.lastLongitude, 78.4482);
+  });
+
+  testWidgets('approval is blocked until address and phone are valid',
+      (tester) async {
+    final repo = await _pump(tester, [_allocation('a1', 'pending_donor')]);
+
+    await tester.tap(find.text('Approve'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('confirmApproveButton')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Enter the complete address (house, street, area).'),
+      findsOneWidget,
+    );
+    expect(find.text('Enter a valid phone number (10-13 digits).'),
+        findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const Key('pickupAddressField')),
+      'Flat 4, Green Towers, Ameerpet',
+    );
+    await tester.enterText(find.byKey(const Key('contactPhoneField')), '12345');
+    await tester.tap(find.byKey(const Key('confirmApproveButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter a valid phone number (10-13 digits).'),
+        findsOneWidget);
+    expect(repo.approved, isEmpty);
   });
 
   testWidgets('rejecting calls the reject endpoint after confirmation',

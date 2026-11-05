@@ -12,6 +12,11 @@ class Allocation {
     this.offeredPortions,
     this.allocatedPortions = 0,
     this.pickupCode,
+    this.pickupAddress,
+    this.contactName,
+    this.contactPhone,
+    this.pickupLatitude,
+    this.pickupLongitude,
     this.collectedAt,
   });
 
@@ -31,6 +36,19 @@ class Allocation {
   /// Present in the NGO allocations response only.
   /// Never expose this value in the donor's allocation response.
   final String? pickupCode;
+
+  /// Full pickup address and donor contact, set when the donor approves.
+  /// Only the donor and the approved NGO receive these.
+  final String? pickupAddress;
+  final String? contactName;
+  final String? contactPhone;
+
+  /// Optional exact pickup point the donor pinned on approval.
+  final double? pickupLatitude;
+  final double? pickupLongitude;
+
+  bool get hasPickupLocation =>
+      pickupLatitude != null && pickupLongitude != null;
 
   final DateTime createdAt;
   final DateTime? collectedAt;
@@ -59,6 +77,11 @@ class Allocation {
           : _toInt(json['offeredPortions']),
       allocatedPortions: _toInt(json['allocatedPortions']),
       pickupCode: json['pickupCode']?.toString(),
+      pickupAddress: json['pickupAddress']?.toString(),
+      contactName: json['contactName']?.toString(),
+      contactPhone: json['contactPhone']?.toString(),
+      pickupLatitude: _toDouble(json['pickupLatitude']),
+      pickupLongitude: _toDouble(json['pickupLongitude']),
       createdAt: _toDate(json['createdAt']),
       collectedAt: json['collectedAt'] == null
           ? null
@@ -74,5 +97,11 @@ class Allocation {
   static DateTime _toDate(dynamic value) {
     if (value == null) return DateTime.now();
     return DateTime.tryParse(value.toString()) ?? DateTime.now();
+  }
+
+  static double? _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
   }
 }

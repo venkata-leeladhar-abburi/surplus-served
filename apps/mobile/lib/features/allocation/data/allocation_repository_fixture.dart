@@ -35,6 +35,11 @@ class AllocationRepositoryFixture implements AllocationRepository {
   @override
   Future<void> approveAllocation({
     required String allocationId,
+    required String pickupAddress,
+    required String contactPhone,
+    String? contactName,
+    double? pickupLatitude,
+    double? pickupLongitude,
   }) async {
     throw UnsupportedError(
       'Allocation approval requires the backend repository.',
