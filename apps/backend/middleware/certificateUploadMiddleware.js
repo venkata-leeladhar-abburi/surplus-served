@@ -1,3 +1,4 @@
+
 const multer = require('multer');
 
 const allowedMimeTypes = [
@@ -7,6 +8,12 @@ const allowedMimeTypes = [
 ];
 
 const fileFilter = (req, file, cb) => {
+  // Temporary debugging: identify the actual MIME type sent by Flutter.
+  console.log('Certificate upload details:', {
+    originalname: file.originalname,
+    mimetype: file.mimetype,
+  });
+
   if (!allowedMimeTypes.includes(file.mimetype)) {
     return cb(
       new Error('Only JPG, PNG and PDF certificates are allowed.')
