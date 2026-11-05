@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const Donation = require('../models/Donation');
 const Allocation = require('../models/Allocation');
+const { createNotifications } = require('../utils/notifications');
 
 const NGO_LIST_FIELDS =
   'name email ngoDetails.organizationName ngoDetails.registrationNumber ' +
@@ -68,6 +69,15 @@ exports.approveNGO = async (req, res) => {
         message: 'Pending NGO application not found.',
       });
     }
+
+    await createNotifications([
+      {
+        userId: ngo._id,
+        type: 'ngo_verified',
+        title: 'Your NGO is verified',
+        body: 'You can now request food donations from donors near you.',
+      },
+    ]);
 
     return res.status(200).json({
       message: 'NGO successfully verified.',
