@@ -141,7 +141,7 @@ exports.createDonation = async (req, res) => {
 exports.getDonations = async (req, res) => {
   try {
     // Only verified NGOs can browse donations
-    if (req.user.ngoDetails?.verificationStatus !== 'approved') {
+    if (req.user.ngoDetails?.verificationStatus !== 'verified') {
       return res.status(403).json({
         message: 'Your NGO account is not verified.',
       });
