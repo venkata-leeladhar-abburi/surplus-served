@@ -48,7 +48,9 @@ class ReceiverFeedScreen extends ConsumerWidget {
               return SsDonationCard(
                 title: d.title,
                 donorName: d.donorName,
-                imageUrl: null,
+                imageUrl: d.imageUrl,
+                isVegetarian:
+                    d.dietType == null ? null : d.dietType == 'veg',
                 status: d.status.ssStatus,
                 statusLabel: d.status.label(l10n),
                 servingsLabel: l10n.commonPortionsLabel(d.portions),

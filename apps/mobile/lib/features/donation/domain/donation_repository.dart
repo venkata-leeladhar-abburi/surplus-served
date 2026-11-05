@@ -15,6 +15,12 @@ abstract class DonationRepository {
     required DateTime pickupWindowStart,
     required DateTime pickupWindowEnd,
     required PickupAddress address,
+    required DateTime expiresAt,
+    String foodCategory = 'other',
+    String? dietType,
+
+    /// Local path of an optional food photo (JPG, PNG or WEBP).
+    String? imagePath,
     String? authToken,
   });
 

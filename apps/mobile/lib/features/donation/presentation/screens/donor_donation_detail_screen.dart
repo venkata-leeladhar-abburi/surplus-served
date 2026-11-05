@@ -11,6 +11,7 @@ import '../../../../core/providers.dart';
 import '../../../../shared/utils/status_mapper.dart';
 import '../../../../shared/widgets/async_error_view.dart';
 import '../../../../shared/widgets/connectivity_banner.dart';
+import '../../../../shared/widgets/donation_food_details.dart';
 import '../../domain/donation_status.dart';
 import '../controllers/donation_providers.dart';
 import '../widgets/donor_requests_section.dart';
@@ -87,6 +88,7 @@ class _DonorDonationDetailScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      DonationFoodDetails(donation: donation),
                       Row(
                         children: [
                           Expanded(

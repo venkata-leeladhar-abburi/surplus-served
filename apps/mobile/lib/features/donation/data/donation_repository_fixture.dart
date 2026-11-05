@@ -32,6 +32,10 @@ class DonationRepositoryFixture implements DonationRepository {
     required DateTime pickupWindowStart,
     required DateTime pickupWindowEnd,
     required PickupAddress address,
+    required DateTime expiresAt,
+    String foodCategory = 'other',
+    String? dietType,
+    String? imagePath,
     String? authToken,
   }) async {
     return _store.create(

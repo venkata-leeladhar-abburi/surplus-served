@@ -134,6 +134,12 @@ Donation _buildDonation(
     title: donationData['title']?.toString() ?? 'Food donation',
     description: donationData['description']?.toString(),
     portions: portions,
+    imageUrl: donationData['imageUrl']?.toString(),
+    foodCategory: donationData['foodCategory']?.toString() ?? 'other',
+    dietType: donationData['dietType']?.toString(),
+    expiresAt: donationData['expiresAt'] != null
+        ? DateTime.tryParse(donationData['expiresAt'].toString())
+        : null,
     status: _donationStatusFor(allocationData['status']?.toString()),
     pickupWindowStart: _toDate(donationData['pickupWindowStart']),
     pickupWindowEnd: _toDate(donationData['pickupWindowEnd']),

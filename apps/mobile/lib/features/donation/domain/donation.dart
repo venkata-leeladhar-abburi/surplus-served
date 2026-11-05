@@ -40,6 +40,10 @@ class Donation {
     required this.createdAt,
     this.description,
     this.remainingPortions,
+    this.imageUrl,
+    this.foodCategory = 'other',
+    this.dietType,
+    this.expiresAt,
     this.allocatedToNgoId,
     this.allocatedToNgoName,
     this.pickupCode,
@@ -55,6 +59,18 @@ class Donation {
   /// Portions not yet given to an NGO (backend `remainingPortions`).
   /// Null when the server response does not include it.
   final int? remainingPortions;
+
+  /// Cloudinary photo URL, if the donor added one.
+  final String? imageUrl;
+
+  /// Backend `foodCategory`, e.g. cooked_meal, bakery. See FoodLabels.
+  final String foodCategory;
+
+  /// veg, non_veg or null when not specified.
+  final String? dietType;
+
+  /// When the food stops being safe to eat. Null for older donations.
+  final DateTime? expiresAt;
   final DonationStatus status;
   final DateTime pickupWindowStart;
   final DateTime pickupWindowEnd;
@@ -90,6 +106,10 @@ class Donation {
       description: description,
       portions: portions,
       remainingPortions: remainingPortions,
+      imageUrl: imageUrl,
+      foodCategory: foodCategory,
+      dietType: dietType,
+      expiresAt: expiresAt,
       status: status ?? this.status,
       pickupWindowStart: pickupWindowStart,
       pickupWindowEnd: pickupWindowEnd,
