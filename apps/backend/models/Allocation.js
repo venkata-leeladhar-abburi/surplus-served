@@ -89,6 +89,22 @@ const allocationSchema = new mongoose.Schema(
       default: null,
     },
 
+    // Optional exact pickup point (GPS) shared by the donor on approval,
+    // used by the NGO for directions.
+    pickupLatitude: {
+      type: Number,
+      min: -90,
+      max: 90,
+      default: null,
+    },
+
+    pickupLongitude: {
+      type: Number,
+      min: -180,
+      max: 180,
+      default: null,
+    },
+
     donorDecisionAt: {
       type: Date,
       default: null,

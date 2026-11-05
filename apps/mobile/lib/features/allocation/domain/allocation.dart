@@ -15,6 +15,8 @@ class Allocation {
     this.pickupAddress,
     this.contactName,
     this.contactPhone,
+    this.pickupLatitude,
+    this.pickupLongitude,
     this.collectedAt,
   });
 
@@ -40,6 +42,13 @@ class Allocation {
   final String? pickupAddress;
   final String? contactName;
   final String? contactPhone;
+
+  /// Optional exact pickup point the donor pinned on approval.
+  final double? pickupLatitude;
+  final double? pickupLongitude;
+
+  bool get hasPickupLocation =>
+      pickupLatitude != null && pickupLongitude != null;
 
   final DateTime createdAt;
   final DateTime? collectedAt;
@@ -71,6 +80,8 @@ class Allocation {
       pickupAddress: json['pickupAddress']?.toString(),
       contactName: json['contactName']?.toString(),
       contactPhone: json['contactPhone']?.toString(),
+      pickupLatitude: _toDouble(json['pickupLatitude']),
+      pickupLongitude: _toDouble(json['pickupLongitude']),
       createdAt: _toDate(json['createdAt']),
       collectedAt: json['collectedAt'] == null
           ? null
@@ -86,5 +97,11 @@ class Allocation {
   static DateTime _toDate(dynamic value) {
     if (value == null) return DateTime.now();
     return DateTime.tryParse(value.toString()) ?? DateTime.now();
+  }
+
+  static double? _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
   }
 }

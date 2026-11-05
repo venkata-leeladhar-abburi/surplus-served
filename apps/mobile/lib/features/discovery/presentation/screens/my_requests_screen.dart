@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
 import '../../../../shared/utils/allocation_status_mapper.dart';
+import '../../../../shared/utils/directions.dart';
 import '../../../../shared/widgets/async_error_view.dart';
 import '../../../../shared/widgets/role_scaffold.dart';
 import '../../../../shared/widgets/role_tabs.dart';
@@ -264,6 +265,21 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
     }
   }
 
+  Future<void> _openDirections(Allocation allocation) async {
+    final uri = pickupDirectionsUri(
+      address: allocation.pickupAddress ?? '',
+      latitude: allocation.pickupLatitude,
+      longitude: allocation.pickupLongitude,
+    );
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open Maps.')),
+      );
+    }
+  }
+
   /// Full address and donor contact, shared by the donor on approval.
   Widget _buildPickupDetails(Allocation allocation) {
     final c = context.ssColors;
@@ -295,6 +311,24 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
           SelectableText(
             address,
             style: SsTypeScale.body.copyWith(color: c.onSurface),
+          ),
+          const SizedBox(height: SsSpacing.sm),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              key: const Key('directionsButton'),
+              onPressed: () => _openDirections(allocation),
+              icon: Icon(
+                allocation.hasPickupLocation
+                    ? Icons.location_on_outlined
+                    : Icons.directions_outlined,
+              ),
+              label: Text(
+                allocation.hasPickupLocation
+                    ? 'Directions (exact pin)'
+                    : 'Directions',
+              ),
+            ),
           ),
           if (phone != null && phone.isNotEmpty) ...[
             const SizedBox(height: SsSpacing.sm),

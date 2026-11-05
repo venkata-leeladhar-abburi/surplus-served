@@ -50,6 +50,7 @@ class _DonorRequestsSectionState extends ConsumerState<DonorRequestsSection> {
         context,
         ngoName: ngoName,
         portions: portions,
+        getLocation: ref.read(pickupLocationFetcherProvider),
         initial: _lastPickupDetails(),
       );
 
@@ -78,6 +79,8 @@ class _DonorRequestsSectionState extends ConsumerState<DonorRequestsSection> {
           pickupAddress: details!.address,
           contactPhone: details.phone,
           contactName: details.contactName,
+          pickupLatitude: details.latitude,
+          pickupLongitude: details.longitude,
         );
       } else {
         await repository.rejectAllocation(allocationId: allocation.id);
@@ -126,6 +129,8 @@ class _DonorRequestsSectionState extends ConsumerState<DonorRequestsSection> {
           address: address,
           phone: phone,
           contactName: a.contactName,
+          latitude: a.pickupLatitude,
+          longitude: a.pickupLongitude,
         );
       }
     }

@@ -414,6 +414,35 @@ exports.approveAllocation = async (req, res) => {
       });
     }
 
+    // Optional exact pickup point. Both coordinates or neither.
+    const { pickupLatitude, pickupLongitude } = req.body;
+    const hasLat = pickupLatitude !== undefined && pickupLatitude !== null;
+    const hasLng = pickupLongitude !== undefined && pickupLongitude !== null;
+    let latitude = null;
+    let longitude = null;
+
+    if (hasLat || hasLng) {
+      const validLat =
+        typeof pickupLatitude === 'number' &&
+        Number.isFinite(pickupLatitude) &&
+        pickupLatitude >= -90 &&
+        pickupLatitude <= 90;
+      const validLng =
+        typeof pickupLongitude === 'number' &&
+        Number.isFinite(pickupLongitude) &&
+        pickupLongitude >= -180 &&
+        pickupLongitude <= 180;
+
+      if (!validLat || !validLng) {
+        return res.status(400).json({
+          message: 'Invalid pickup location.',
+        });
+      }
+
+      latitude = pickupLatitude;
+      longitude = pickupLongitude;
+    }
+
     let approvedAllocation = null;
 
     await session.withTransaction(async () => {
@@ -496,6 +525,8 @@ exports.approveAllocation = async (req, res) => {
             pickupAddress,
             contactName,
             contactPhone,
+            pickupLatitude: latitude,
+            pickupLongitude: longitude,
             donorDecisionAt: new Date(),
           },
         },
@@ -524,6 +555,8 @@ exports.approveAllocation = async (req, res) => {
         pickupAddress: approvedAllocation.pickupAddress,
         contactName: approvedAllocation.contactName,
         contactPhone: approvedAllocation.contactPhone,
+        pickupLatitude: approvedAllocation.pickupLatitude,
+        pickupLongitude: approvedAllocation.pickupLongitude,
       },
     });
   } catch (error) {

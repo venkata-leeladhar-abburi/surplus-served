@@ -8,6 +8,7 @@ import 'package:surplus_served_mobile/features/allocation/domain/allocation_repo
 import 'package:surplus_served_mobile/features/donation/domain/donation.dart';
 import 'package:surplus_served_mobile/features/donation/presentation/controllers/donation_providers.dart';
 import 'package:surplus_served_mobile/features/donation/presentation/widgets/donor_requests_section.dart';
+import 'package:surplus_served_mobile/features/donation/presentation/widgets/pickup_details_dialog.dart';
 
 /// Records which allocation endpoints the widget calls.
 class _RecordingAllocationRepository implements AllocationRepository {
@@ -16,6 +17,8 @@ class _RecordingAllocationRepository implements AllocationRepository {
   String? lastAddress;
   String? lastPhone;
   String? lastContactName;
+  double? lastLatitude;
+  double? lastLongitude;
 
   @override
   Future<void> approveAllocation({
@@ -23,11 +26,15 @@ class _RecordingAllocationRepository implements AllocationRepository {
     required String pickupAddress,
     required String contactPhone,
     String? contactName,
+    double? pickupLatitude,
+    double? pickupLongitude,
   }) async {
     approved.add(allocationId);
     lastAddress = pickupAddress;
     lastPhone = contactPhone;
     lastContactName = contactName;
+    lastLatitude = pickupLatitude;
+    lastLongitude = pickupLongitude;
   }
 
   @override
@@ -60,6 +67,10 @@ Future<_RecordingAllocationRepository> _pump(
       overrides: [
         donorAllocationsProvider.overrideWith((ref) async => allocations),
         allocationRepositoryProvider.overrideWithValue(repo),
+        // No real GPS in tests.
+        pickupLocationFetcherProvider.overrideWithValue(
+          () async => (latitude: 17.4375, longitude: 78.4482),
+        ),
         // Refresh after a decision re-reads these; keep them offline.
         donationByIdProvider.overrideWith(
           (ref, id) => const Stream<Donation>.empty(),
@@ -119,7 +130,36 @@ void main() {
     expect(repo.lastAddress, 'Flat 4, Green Towers, Ameerpet, Hyderabad');
     expect(repo.lastPhone, '9876543210');
     expect(repo.lastContactName, isNull);
+    expect(repo.lastLatitude, isNull); // location is optional
+    expect(repo.lastLongitude, isNull);
     expect(repo.rejected, isEmpty);
+  });
+
+  testWidgets('donor can pin the exact pickup location', (tester) async {
+    final repo = await _pump(tester, [_allocation('a1', 'pending_donor')]);
+
+    await tester.tap(find.text('Approve'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('pickupAddressField')),
+      'Flat 4, Green Towers, Ameerpet, Hyderabad',
+    );
+    await tester.enterText(
+      find.byKey(const Key('contactPhoneField')),
+      '9876543210',
+    );
+    await tester.ensureVisible(find.byKey(const Key('useLocationButton')));
+    await tester.tap(find.byKey(const Key('useLocationButton')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Exact location pinned'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('confirmApproveButton')));
+    await tester.pumpAndSettle();
+
+    expect(repo.approved, ['a1']);
+    expect(repo.lastLatitude, 17.4375);
+    expect(repo.lastLongitude, 78.4482);
   });
 
   testWidgets('approval is blocked until address and phone are valid',

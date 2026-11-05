@@ -29,6 +29,8 @@ abstract class AllocationRepository {
     required String pickupAddress,
     required String contactPhone,
     String? contactName,
+    double? pickupLatitude,
+    double? pickupLongitude,
   });
 
   // Donor rejects an NGO allocation.

@@ -246,6 +246,16 @@ step('approval requires full address and valid phone', async () => {
     token: ctx.donor, body: { pickupAddress: 'Ameerpet', contactPhone: '9876543210' },
   });
   assert.strictEqual(shortAddr.status, 400);
+  const badLoc = await call('POST', `/donations/allocations/${ctx.a1}/approve`, {
+    token: ctx.donor,
+    body: { pickupAddress: 'Flat 4, Green Towers, Ameerpet', contactPhone: '9876543210', pickupLatitude: 95, pickupLongitude: 78.4 },
+  });
+  assert.strictEqual(badLoc.status, 400);
+  const halfLoc = await call('POST', `/donations/allocations/${ctx.a1}/approve`, {
+    token: ctx.donor,
+    body: { pickupAddress: 'Flat 4, Green Towers, Ameerpet', contactPhone: '9876543210', pickupLatitude: 17.43 },
+  });
+  assert.strictEqual(halfLoc.status, 400);
   // Nothing was approved by the failed attempts.
   const n1 = await call('GET', '/donations/my-allocations', { token: ctx.ngo1 });
   assert.strictEqual(n1.json.allocations.find((a) => a._id === ctx.a1).status, 'pending_donor');
@@ -262,7 +272,12 @@ step('NGO2 cannot see pickup details before it is approved', async () => {
 step('donor approves NGO1 -> NGO2 gets reduced offer of 4', async () => {
   const r = await call('POST', `/donations/allocations/${ctx.a1}/approve`, {
     token: ctx.donor,
-    body: { pickupAddress: 'Flat 4, Green Towers, Ameerpet, Hyderabad', contactPhone: '98765 43210' },
+    body: {
+      pickupAddress: 'Flat 4, Green Towers, Ameerpet, Hyderabad',
+      contactPhone: '98765 43210',
+      pickupLatitude: 17.4375,
+      pickupLongitude: 78.4482,
+    },
   });
   assert.strictEqual(r.status, 200, JSON.stringify(r.json));
   assert.strictEqual(r.json.allocation.allocatedPortions, 6);
@@ -283,6 +298,8 @@ step('NGO1 sees its pickup code', async () => {
   assert.strictEqual(mine.pickupAddress, 'Flat 4, Green Towers, Ameerpet, Hyderabad');
   assert.strictEqual(mine.contactPhone, '9876543210');
   assert.strictEqual(mine.contactName, 'Donor One');
+  assert.strictEqual(mine.pickupLatitude, 17.4375);
+  assert.strictEqual(mine.pickupLongitude, 78.4482);
   // The other NGO never sees NGO1's pickup details.
   const n2 = await call('GET', '/donations/my-allocations', { token: ctx.ngo2 });
   assert.ok(n2.json.allocations.every((a) => a._id !== ctx.a1));
@@ -350,6 +367,7 @@ step('admin lists users, donations and activity without secrets', async () => {
     assert.strictEqual(x.pickupCode, undefined);
     assert.strictEqual(x.contactPhone, undefined);
     assert.strictEqual(x.pickupAddress, undefined);
+    assert.strictEqual(x.pickupLatitude, undefined);
   }
   const bad = await call('GET', '/admin/ngos?status=weird', { token: ctx.admin });
   assert.strictEqual(bad.status, 400);

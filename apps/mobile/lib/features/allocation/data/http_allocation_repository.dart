@@ -138,6 +138,8 @@ class HttpAllocationRepository implements AllocationRepository {
     required String pickupAddress,
     required String contactPhone,
     String? contactName,
+    double? pickupLatitude,
+    double? pickupLongitude,
   }) async {
     await _post(
       '/allocations/$allocationId/approve',
@@ -145,6 +147,8 @@ class HttpAllocationRepository implements AllocationRepository {
         'pickupAddress': pickupAddress,
         'contactPhone': contactPhone,
         'contactName': ?contactName,
+        'pickupLatitude': ?pickupLatitude,
+        'pickupLongitude': ?pickupLongitude,
       },
     );
   }
