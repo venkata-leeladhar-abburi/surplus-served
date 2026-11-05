@@ -263,9 +263,21 @@ class _DonorDonationDetailScreenState
             ),
             const SizedBox(height: SsSpacing.md),
             ElevatedButton.icon(
-              onPressed: () {
-                context.push(
+              onPressed: () async {
+                final verified = await context.push<bool>(
                   '/donor/donation/${widget.donationId}/allocation/${allocation.id}/verify-pickup',
+                );
+
+                if (!mounted || verified != true) return;
+
+                ref.invalidate(donorAllocationsProvider);
+                ref.invalidate(donationByIdProvider(widget.donationId));
+                ref.invalidate(donorDonationsProvider);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Pickup verified successfully.'),
+                  ),
                 );
               },
               icon: const Icon(Icons.verified_outlined),
