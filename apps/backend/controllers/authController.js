@@ -244,7 +244,8 @@ const loginUser = async (req, res) => {
         });
       }
 
-      if (verificationStatus !== 'approved') {
+      // User model and admin approval controller use "verified".
+      if (verificationStatus !== 'verified') {
         return res.status(403).json({
           message: 'Your NGO account is not approved.',
           verificationStatus,
