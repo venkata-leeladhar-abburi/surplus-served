@@ -53,7 +53,7 @@ const protect = async (req, res, next) => {
     // Block NGOs until admin approval
     if (
       user.role === 'ngo' &&
-      user.ngoDetails?.verificationStatus !== 'approved'
+      user.ngoDetails?.verificationStatus !== 'verified'
     ) {
       return res.status(403).json({
         message:
