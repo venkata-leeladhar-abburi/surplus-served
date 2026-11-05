@@ -39,6 +39,7 @@ class Donation {
     required this.address,
     required this.createdAt,
     this.description,
+    this.remainingPortions,
     this.allocatedToNgoId,
     this.allocatedToNgoName,
     this.pickupCode,
@@ -50,6 +51,10 @@ class Donation {
   final String title;
   final String? description;
   final int portions;
+
+  /// Portions not yet given to an NGO (backend `remainingPortions`).
+  /// Null when the server response does not include it.
+  final int? remainingPortions;
   final DonationStatus status;
   final DateTime pickupWindowStart;
   final DateTime pickupWindowEnd;
@@ -84,6 +89,7 @@ class Donation {
       title: title,
       description: description,
       portions: portions,
+      remainingPortions: remainingPortions,
       status: status ?? this.status,
       pickupWindowStart: pickupWindowStart,
       pickupWindowEnd: pickupWindowEnd,

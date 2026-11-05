@@ -264,6 +264,7 @@ class HttpDonationRepository implements DonationRepository {
       title: json['title']?.toString() ?? '',
       description: json['description']?.toString(),
       portions: (json['portions'] as num?)?.toInt() ?? 0,
+      remainingPortions: (json['remainingPortions'] as num?)?.toInt(),
       status: _mapStatus(json['status']),
       pickupWindowStart: json['pickupWindowStart'] != null
           ? DateTime.parse(json['pickupWindowStart'].toString())

@@ -11,9 +11,9 @@ import '../../../../core/providers.dart';
 import '../../../../shared/utils/status_mapper.dart';
 import '../../../../shared/widgets/async_error_view.dart';
 import '../../../../shared/widgets/connectivity_banner.dart';
-import '../../../allocation/domain/allocation.dart';
 import '../../domain/donation_status.dart';
 import '../controllers/donation_providers.dart';
+import '../widgets/donor_requests_section.dart';
 
 class DonorDonationDetailScreen extends ConsumerStatefulWidget {
   const DonorDonationDetailScreen({super.key, required this.donationId});
@@ -28,6 +28,7 @@ class DonorDonationDetailScreen extends ConsumerStatefulWidget {
 class _DonorDonationDetailScreenState
     extends ConsumerState<DonorDonationDetailScreen> {
   Timer? _ticker;
+  bool _cancelling = false;
 
   @override
   void initState() {
@@ -104,7 +105,13 @@ class _DonorDonationDetailScreenState
                       ),
                       const SizedBox(height: SsSpacing.sm),
                       Text(
-                        l10n.commonPortionsLabel(donation.portions),
+                        donation.status == DonationStatus.live &&
+                                donation.remainingPortions != null &&
+                                donation.remainingPortions !=
+                                    donation.portions
+                            ? '${donation.remainingPortions} of '
+                                '${donation.portions} portions still available'
+                            : l10n.commonPortionsLabel(donation.portions),
                         style: SsTypeScale.body.copyWith(
                           color: c.onSurfaceVariant,
                         ),
@@ -130,8 +137,15 @@ class _DonorDonationDetailScreenState
                             donation.allocatedToNgoName ?? '',
                           ),
                         ),
+                      ],
+
+                      // NGO requests: approve/reject, pickup verification
+                      // and request history for this donation.
+                      if (donation.status == DonationStatus.live ||
+                          donation.status == DonationStatus.allocated ||
+                          donation.status == DonationStatus.collected) ...[
                         const SizedBox(height: SsSpacing.lg),
-                        _buildAllocationSection(),
+                        DonorRequestsSection(donationId: donation.id),
                       ],
 
                       if (donation.status == DonationStatus.collected) ...[
@@ -176,9 +190,10 @@ class _DonorDonationDetailScreenState
                         SsButton.danger(
                           label: l10n.donorCancelCta,
                           expand: true,
-                          onPressed: () => ref
-                              .read(donationRepositoryProvider)
-                              .cancel(donation.id),
+                          isLoading: _cancelling,
+                          onPressed: _cancelling
+                              ? null
+                              : () => _cancelDonation(donation.id),
                         ),
                       ],
                     ],
@@ -192,100 +207,55 @@ class _DonorDonationDetailScreenState
     );
   }
 
-  Widget _buildAllocationSection() {
-    final c = context.ssColors;
-    final allocationsAsync = ref.watch(donorAllocationsProvider);
+  Future<void> _cancelDonation(String donationId) async {
+    if (_cancelling) return;
 
-    return allocationsAsync.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(),
-      ),
-      error: (error, _) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Could not load allocation details.'),
-          TextButton(
-            onPressed: () => ref.invalidate(donorAllocationsProvider),
-            child: const Text('Retry'),
+    final confirmed = await SsDialog.confirm(
+      context,
+      title: 'Cancel donation?',
+      message: 'NGOs will no longer be able to request this donation.',
+      confirmLabel: 'Cancel donation',
+      cancelLabel: 'Keep it',
+      destructive: true,
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _cancelling = true);
+
+    try {
+      final session = ref.read(sessionProvider);
+
+      await ref
+          .read(donationRepositoryProvider)
+          .cancel(donationId, authToken: session?.token);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Donation cancelled.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error
+                .toString()
+                .replaceAll('Exception: ', '')
+                .replaceFirst('Network error cancelling donation: ', ''),
           ),
-        ],
-      ),
-      data: (allocations) {
-        final matchingAllocations = allocations.where((allocation) {
-          return allocation.donationId == widget.donationId &&
-              allocation.isApproved;
-        }).toList();
-
-        if (matchingAllocations.isEmpty) {
-          return const Text(
-            'Your donation is allocated. Allocation details will appear here.',
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Pickup verification',
-              style: SsTypeScale.h4.copyWith(color: c.onSurface),
-            ),
-            const SizedBox(height: SsSpacing.md),
-            ...matchingAllocations.map(
-              (allocation) => _buildAllocationCard(allocation),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildAllocationCard(Allocation allocation) {
-    final c = context.ssColors;
-
-    return Card(
-      color: c.surface,
-      margin: const EdgeInsets.only(bottom: SsSpacing.md),
-      child: Padding(
-        padding: const EdgeInsets.all(SsSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              allocation.ngoName ?? 'NGO',
-              style: SsTypeScale.h4.copyWith(color: c.onSurface),
-            ),
-            const SizedBox(height: SsSpacing.xs),
-            Text(
-              'Allocated portions: ${allocation.allocatedPortions}',
-              style: SsTypeScale.body.copyWith(
-                color: c.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: SsSpacing.md),
-            ElevatedButton.icon(
-              onPressed: () async {
-                final verified = await context.push<bool>(
-                  '/donor/donation/${widget.donationId}/allocation/${allocation.id}/verify-pickup',
-                );
-
-                if (!mounted || verified != true) return;
-
-                ref.invalidate(donorAllocationsProvider);
-                ref.invalidate(donationByIdProvider(widget.donationId));
-                ref.invalidate(donorDonationsProvider);
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Pickup verified successfully.'),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.verified_outlined),
-              label: const Text('Verify pickup'),
-            ),
-          ],
+          backgroundColor: Colors.red,
         ),
-      ),
-    );
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _cancelling = false);
+        ref.invalidate(donationByIdProvider(donationId));
+        ref.invalidate(donorDonationsProvider);
+        ref.invalidate(donorAllocationsProvider);
+      }
+    }
   }
 }
