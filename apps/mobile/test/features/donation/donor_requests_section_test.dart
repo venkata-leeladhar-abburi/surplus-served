@@ -1,0 +1,129 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:ss_design_system/ss_design_system.dart';
+import 'package:surplus_served_mobile/core/providers.dart';
+import 'package:surplus_served_mobile/features/allocation/domain/allocation.dart';
+import 'package:surplus_served_mobile/features/allocation/domain/allocation_repository.dart';
+import 'package:surplus_served_mobile/features/donation/domain/donation.dart';
+import 'package:surplus_served_mobile/features/donation/presentation/controllers/donation_providers.dart';
+import 'package:surplus_served_mobile/features/donation/presentation/widgets/donor_requests_section.dart';
+
+/// Records which allocation endpoints the widget calls.
+class _RecordingAllocationRepository implements AllocationRepository {
+  final approved = <String>[];
+  final rejected = <String>[];
+
+  @override
+  Future<void> approveAllocation({required String allocationId}) async =>
+      approved.add(allocationId);
+
+  @override
+  Future<void> rejectAllocation({required String allocationId}) async =>
+      rejected.add(allocationId);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+Allocation _allocation(String id, String status) => Allocation(
+      id: id,
+      donationId: 'd1',
+      status: status,
+      createdAt: DateTime(2026, 1, 1),
+      ngoName: 'NGO $id',
+      requestedPortions: 5,
+      offeredPortions: 5,
+      allocatedPortions: status == 'approved' ? 5 : 0,
+    );
+
+Future<_RecordingAllocationRepository> _pump(
+  WidgetTester tester,
+  List<Allocation> allocations,
+) async {
+  final repo = _RecordingAllocationRepository();
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        donorAllocationsProvider.overrideWith((ref) async => allocations),
+        allocationRepositoryProvider.overrideWithValue(repo),
+        // Refresh after a decision re-reads these; keep them offline.
+        donationByIdProvider.overrideWith(
+          (ref, id) => const Stream<Donation>.empty(),
+        ),
+        donorDonationsProvider.overrideWith(
+          (ref) => const Stream<List<Donation>>.empty(),
+        ),
+      ],
+      child: MaterialApp(
+        theme: SsTheme.light(),
+        home: const Scaffold(
+          body: SingleChildScrollView(
+            child: DonorRequestsSection(donationId: 'd1'),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return repo;
+}
+
+void main() {
+  testWidgets('shows Approve/Reject for pending_donor and Verify for approved',
+      (tester) async {
+    await _pump(tester, [
+      _allocation('a1', 'pending_donor'),
+      _allocation('a2', 'approved'),
+      _allocation('a3', 'queued'),
+    ]);
+
+    expect(find.text('Approve'), findsOneWidget);
+    expect(find.text('Reject'), findsOneWidget);
+    expect(find.text('Verify pickup'), findsOneWidget);
+    expect(find.textContaining('In queue'), findsOneWidget);
+  });
+
+  testWidgets('approving calls the approve endpoint after confirmation',
+      (tester) async {
+    final repo = await _pump(tester, [_allocation('a1', 'pending_donor')]);
+
+    await tester.tap(find.text('Approve'));
+    await tester.pumpAndSettle();
+
+    // Confirmation dialog: tap its Approve button (the last one shown).
+    await tester.tap(find.text('Approve').last);
+    await tester.pumpAndSettle();
+
+    expect(repo.approved, ['a1']);
+    expect(repo.rejected, isEmpty);
+  });
+
+  testWidgets('rejecting calls the reject endpoint after confirmation',
+      (tester) async {
+    final repo = await _pump(tester, [_allocation('a1', 'pending_donor')]);
+
+    await tester.tap(find.text('Reject'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reject').last);
+    await tester.pumpAndSettle();
+
+    expect(repo.rejected, ['a1']);
+    expect(repo.approved, isEmpty);
+  });
+
+  testWidgets('ignores requests for other donations', (tester) async {
+    await _pump(tester, [
+      Allocation(
+        id: 'x',
+        donationId: 'other',
+        status: 'pending_donor',
+        createdAt: DateTime(2026, 1, 1),
+      ),
+    ]);
+
+    expect(find.text('Approve'), findsNothing);
+    expect(find.text('No NGO has requested this donation yet.'), findsOneWidget);
+  });
+}
