@@ -52,8 +52,10 @@ class HttpAuthRepository implements AuthRepository {
         throw Exception('Selected certificate file does not exist.');
       }
 
-      final extension =
-          certificatePath.split('.').last.toLowerCase();
+      final extension = certificatePath
+          .split('.')
+          .last
+          .toLowerCase();
 
       final MediaType contentType;
 
@@ -62,15 +64,12 @@ class HttpAuthRepository implements AuthRepository {
         case 'jpeg':
           contentType = MediaType('image', 'jpeg');
           break;
-
         case 'png':
           contentType = MediaType('image', 'png');
           break;
-
         case 'pdf':
           contentType = MediaType('application', 'pdf');
           break;
-
         default:
           throw Exception(
             'Only JPG, PNG and PDF certificates are allowed.',
@@ -118,7 +117,6 @@ class HttpAuthRepository implements AuthRepository {
 
     if (response.statusCode == 201) {
       final data = _decodeResponse(response);
-
       return _createSession(data, fallbackName: name);
     }
 
@@ -143,7 +141,6 @@ class HttpAuthRepository implements AuthRepository {
 
     if (response.statusCode == 200) {
       final data = _decodeResponse(response);
-
       return _createSession(data, fallbackName: 'User');
     }
 
@@ -159,7 +156,7 @@ class HttpAuthRepository implements AuthRepository {
       }
 
       throw Exception('Unexpected server response.');
-    } catch (e) {
+    } catch (_) {
       throw Exception('Unable to read server response.');
     }
   }
@@ -201,7 +198,7 @@ class HttpAuthRepository implements AuthRepository {
         return data['message']?.toString() ?? fallbackMessage;
       }
     } catch (_) {
-      // Use the fallback message if the response is not valid JSON.
+      // Use fallback message for invalid JSON.
     }
 
     return fallbackMessage;
