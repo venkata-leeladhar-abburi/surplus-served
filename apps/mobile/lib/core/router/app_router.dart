@@ -35,6 +35,7 @@ abstract final class AppRoute {
   static const donorDashboard = 'donorDashboard';
   static const donorCreate = 'donorCreate';
   static const donorDonationDetail = 'donorDonationDetail';
+  static const donorVerifyPickup = 'donorVerifyPickup';
   static const donorRecurring = 'donorRecurring';
   static const donorHistory = 'donorHistory';
   static const donorNotifications = 'donorNotifications';
@@ -42,7 +43,6 @@ abstract final class AppRoute {
 
   static const receiverFeed = 'receiverFeed';
   static const receiverDonationDetail = 'receiverDonationDetail';
-  static const receiverEnterCode = 'receiverEnterCode';
   static const receiverHandoverSuccess = 'receiverHandoverSuccess';
   static const receiverRequests = 'receiverRequests';
   static const receiverHistory = 'receiverHistory';
@@ -51,8 +51,6 @@ abstract final class AppRoute {
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
-  // Re-evaluate redirects whenever the session changes, so signing in from
-  // the OTP screen immediately unlocks the role-guarded routes below.
   final sessionListenable = _SessionListenable(ref);
 
   return GoRouter(
@@ -71,9 +69,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         return loggingIn ? null : '/';
       }
 
-      // Role guard: donors cannot access NGO routes and NGOs cannot
-      // access donor routes. The receiver route paths are retained
-      // internally for compatibility with the existing frontend.
       if (session.role == UserRole.donor &&
           state.matchedLocation.startsWith('/receiver')) {
         return '/donor';
@@ -138,6 +133,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => DonorDonationDetailScreen(
               donationId: state.pathParameters['id']!,
             ),
+            routes: [
+              GoRoute(
+                path: 'allocation/:allocationId/verify-pickup',
+                name: AppRoute.donorVerifyPickup,
+                builder: (context, state) => EnterPickupCodeScreen(
+                  allocationId: state.pathParameters['allocationId']!,
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: 'recurring',
@@ -173,12 +177,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: AppRoute.receiverDonationDetail,
             builder: (context, state) =>
                 DonationDetailScreen(donationId: state.pathParameters['id']!),
-          ),
-          GoRoute(
-            path: 'donation/:id/enter-code',
-            name: AppRoute.receiverEnterCode,
-            builder: (context, state) =>
-                EnterPickupCodeScreen(donationId: state.pathParameters['id']!),
           ),
           GoRoute(
             path: 'donation/:id/collected',
