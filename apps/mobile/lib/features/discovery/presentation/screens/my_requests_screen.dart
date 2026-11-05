@@ -87,7 +87,7 @@ class MyRequestsScreen extends ConsumerWidget {
                         decoration: BoxDecoration(
                           color: c.surface,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: c.outlineVariant),
+                          border: Border.all(color: c.border),
                         ),
                         child: Row(
                           children: [
