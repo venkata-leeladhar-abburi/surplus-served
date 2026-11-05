@@ -1,3 +1,4 @@
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -10,13 +11,10 @@ import '../../../../core/providers.dart';
 import '../../../../shared/utils/status_mapper.dart';
 import '../../../../shared/widgets/async_error_view.dart';
 import '../../../../shared/widgets/connectivity_banner.dart';
+import '../../../allocation/domain/allocation.dart';
 import '../../domain/donation_status.dart';
 import '../controllers/donation_providers.dart';
 
-/// The donor's view of one donation as it moves through its lifecycle —
-/// the other end of the vertical slice from `DonationDetailScreen`
-/// (receiver). Both watch the same `donationByIdProvider`, so a request or
-/// a code entry on the receiver's side appears here without a refresh.
 class DonorDonationDetailScreen extends ConsumerStatefulWidget {
   const DonorDonationDetailScreen({super.key, required this.donationId});
 
@@ -34,8 +32,6 @@ class _DonorDonationDetailScreenState
   @override
   void initState() {
     super.initState();
-    // The freshness ring reads wall-clock time, not just donation state, so
-    // it has to repaint on its own even while nothing else changes.
     _ticker = Timer.periodic(
       const Duration(seconds: 30),
       (_) => setState(() {}),
@@ -69,7 +65,9 @@ class _DonorDonationDetailScreenState
           const ConnectivityBanner(),
           Expanded(
             child: donationAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(
+                child: CircularProgressIndicator(),
+              ),
               error: (err, _) => AsyncErrorView(
                 error: err,
                 onRetry: () =>
@@ -112,6 +110,7 @@ class _DonorDonationDetailScreenState
                         ),
                       ),
                       const SizedBox(height: SsSpacing.xxl),
+
                       if (donation.status == DonationStatus.live) ...[
                         Center(
                           child: SsFreshnessRing(
@@ -123,6 +122,7 @@ class _DonorDonationDetailScreenState
                         const SizedBox(height: SsSpacing.lg),
                         SsAlert(message: l10n.donorLiveAlert),
                       ],
+
                       if (donation.status == DonationStatus.allocated) ...[
                         SsAlert(
                           tone: SsAlertTone.success,
@@ -130,14 +130,10 @@ class _DonorDonationDetailScreenState
                             donation.allocatedToNgoName ?? '',
                           ),
                         ),
-                        const SizedBox(height: SsSpacing.xxl),
-                        Center(
-                          child: SsPickupCode(
-                            code: donation.pickupCode!,
-                            caption: l10n.donorPickupCodeCaption,
-                          ),
-                        ),
+                        const SizedBox(height: SsSpacing.lg),
+                        _buildAllocationSection(),
                       ],
+
                       if (donation.status == DonationStatus.collected) ...[
                         Center(
                           child: SsIllustration(
@@ -151,11 +147,15 @@ class _DonorDonationDetailScreenState
                             l10n.donorCollectedByLabel(
                               donation.allocatedToNgoName ?? '',
                             ),
-                            style: SsTypeScale.h4.copyWith(color: c.onSurface),
+                            style: SsTypeScale.h4.copyWith(
+                              color: c.onSurface,
+                            ),
                           ),
                         ),
                       ],
+
                       const SizedBox(height: SsSpacing.xxl),
+
                       if (donation.address.hasExactDetails) ...[
                         Text(
                           l10n.commonPickupAddressLabel,
@@ -170,6 +170,7 @@ class _DonorDonationDetailScreenState
                           phone: donation.address.contactPhone,
                         ),
                       ],
+
                       if (donation.status == DonationStatus.live) ...[
                         const SizedBox(height: SsSpacing.xxl),
                         SsButton.danger(
@@ -187,6 +188,91 @@ class _DonorDonationDetailScreenState
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAllocationSection() {
+    final c = context.ssColors;
+    final allocationsAsync = ref.watch(donorAllocationsProvider);
+
+    return allocationsAsync.when(
+      loading: () => const Center(
+        child: CircularProgressIndicator(),
+      ),
+      error: (error, _) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Could not load allocation details.'),
+          TextButton(
+            onPressed: () => ref.invalidate(donorAllocationsProvider),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+      data: (allocations) {
+        final matchingAllocations = allocations.where((allocation) {
+          return allocation.donationId == widget.donationId &&
+              allocation.isApproved;
+        }).toList();
+
+        if (matchingAllocations.isEmpty) {
+          return const Text(
+            'Your donation is allocated. Allocation details will appear here.',
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Pickup verification',
+              style: SsTypeScale.h4.copyWith(color: c.onSurface),
+            ),
+            const SizedBox(height: SsSpacing.md),
+            ...matchingAllocations.map(
+              (allocation) => _buildAllocationCard(allocation),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildAllocationCard(Allocation allocation) {
+    final c = context.ssColors;
+
+    return Card(
+      color: c.surface,
+      margin: const EdgeInsets.only(bottom: SsSpacing.md),
+      child: Padding(
+        padding: const EdgeInsets.all(SsSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              allocation.ngoName ?? 'NGO',
+              style: SsTypeScale.h4.copyWith(color: c.onSurface),
+            ),
+            const SizedBox(height: SsSpacing.xs),
+            Text(
+              'Allocated portions: ${allocation.allocatedPortions}',
+              style: SsTypeScale.body.copyWith(
+                color: c.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: SsSpacing.md),
+            ElevatedButton.icon(
+              onPressed: () {
+                context.push(
+                  '/donor/donation/${widget.donationId}/allocation/${allocation.id}/verify-pickup',
+                );
+              },
+              icon: const Icon(Icons.verified_outlined),
+              label: const Text('Verify pickup'),
+            ),
+          ],
+        ),
       ),
     );
   }
