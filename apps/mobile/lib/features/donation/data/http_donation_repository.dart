@@ -178,8 +178,8 @@ class HttpDonationRepository implements DonationRepository {
           'title': title,
           'description': description,
           'portions': portions,
-          'pickupWindowStart': pickupWindowStart.toIso8601String(),
-          'pickupWindowEnd': pickupWindowEnd.toIso8601String(),
+          'pickupWindowStart': pickupWindowStart.toUtc().toIso8601String(),
+          'pickupWindowEnd': pickupWindowEnd.toUtc().toIso8601String(),
           'address': {
             'locality': address.locality,
           },
