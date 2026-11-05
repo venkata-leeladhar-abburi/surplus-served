@@ -24,8 +24,6 @@ import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/recurring/presentation/screens/recurring_templates_screen.dart';
 import '../providers.dart';
 
-/// Route names — used instead of raw path strings anywhere a screen needs
-/// to navigate, so a path typo is a compile error, not a runtime 404.
 abstract final class AppRoute {
   static const splash = 'splash';
   static const roleSelect = 'roleSelect';
@@ -116,7 +114,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const LoginScreen(),
       ),
 
-      // Donor
+      // Donor routes
       GoRoute(
         path: '/donor',
         name: AppRoute.donorDashboard,
@@ -166,7 +164,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // NGO (existing internal receiver routes)
+      // NGO routes (existing internal receiver paths)
       GoRoute(
         path: '/receiver',
         name: AppRoute.receiverFeed,
