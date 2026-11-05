@@ -30,6 +30,7 @@ void main() {
       donationId: donation.id,
       ngoId: 'ngo-test',
       ngoName: 'Test NGO',
+      requestedPortions: 10,
     );
     expect(allocated.status, DonationStatus.allocated);
     expect(allocated.pickupCode, hasLength(4));
