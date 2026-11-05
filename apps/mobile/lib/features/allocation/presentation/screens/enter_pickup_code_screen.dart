@@ -1,54 +1,79 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
-import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
 import '../../../../shared/widgets/connectivity_banner.dart';
-import '../../domain/allocation_repository.dart';
 
-/// §12's entire proof mechanism for v1: the NGO reads the 4-digit code off
-/// the donor's screen and enters it here. No photo, no signature, no GPS.
 class EnterPickupCodeScreen extends ConsumerStatefulWidget {
-  const EnterPickupCodeScreen({super.key, required this.donationId});
+  const EnterPickupCodeScreen({
+    super.key,
+    required this.allocationId,
+  });
 
-  final String donationId;
+  final String allocationId;
 
   @override
   ConsumerState<EnterPickupCodeScreen> createState() =>
       _EnterPickupCodeScreenState();
 }
 
-class _EnterPickupCodeScreenState extends ConsumerState<EnterPickupCodeScreen> {
+class _EnterPickupCodeScreenState
+    extends ConsumerState<EnterPickupCodeScreen> {
   final _controller = TextEditingController();
+
   bool _checking = false;
-  bool _hasError = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   Future<void> _submit() async {
+    final code = _controller.text.trim();
+
+    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+      setState(() {
+        _errorMessage = 'Please enter a valid six-digit pickup code.';
+      });
+      return;
+    }
+
     setState(() {
       _checking = true;
-      _hasError = false;
+      _errorMessage = null;
     });
-    final result = await ref
-        .read(allocationRepositoryProvider)
-        .enterPickupCode(donationId: widget.donationId, code: _controller.text);
-    if (!mounted) return;
-    setState(() => _checking = false);
-    if (result == CodeEntryResult.success) {
-      context.goNamed(
-        'receiverHandoverSuccess',
-        pathParameters: {'id': widget.donationId},
-      );
-    } else {
-      setState(() => _hasError = true);
+
+    try {
+      await ref.read(allocationRepositoryProvider).verifyPickupCode(
+            allocationId: widget.allocationId,
+            code: code,
+          );
+
+      if (!mounted) return;
+
+      context.pop(true);
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = error.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _checking = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final c = context.ssColors;
-    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(
@@ -56,7 +81,11 @@ class _EnterPickupCodeScreenState extends ConsumerState<EnterPickupCodeScreen> {
         elevation: 0,
         leading: IconButton(
           icon: SsIcon(SsIcons.arrowLeft, color: c.onSurface),
-          onPressed: () => context.pop(),
+          onPressed: _checking ? null : () => context.pop(),
+        ),
+        title: Text(
+          'Verify pickup',
+          style: SsTypeScale.h3.copyWith(color: c.onSurface),
         ),
       ),
       body: Column(
@@ -68,31 +97,50 @@ class _EnterPickupCodeScreenState extends ConsumerState<EnterPickupCodeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const SizedBox(height: SsSpacing.lg),
+                  Icon(
+                    Icons.verified_user_outlined,
+                    size: 64,
+                    color: c.primary,
+                  ),
+                  const SizedBox(height: SsSpacing.lg),
                   Text(
-                    l10n.receiverEnterCodeTitle,
-                    style: SsTypeScale.h3.copyWith(color: c.onSurface),
+                    'Confirm food pickup',
+                    textAlign: TextAlign.center,
+                    style: SsTypeScale.h3.copyWith(
+                      color: c.onSurface,
+                    ),
                   ),
                   const SizedBox(height: SsSpacing.sm),
                   Text(
-                    l10n.receiverEnterCodeSubtitle,
-                    style: SsTypeScale.body.copyWith(color: c.onSurfaceVariant),
+                    'Ask the NGO to share the six-digit pickup code. '
+                    'Enter that code here to confirm that the food '
+                    'has been collected.',
+                    textAlign: TextAlign.center,
+                    style: SsTypeScale.body.copyWith(
+                      color: c.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: SsSpacing.xxl),
                   SsTextField(
-                    label: l10n.donorPickupCodeLabel,
+                    label: 'Six-digit pickup code',
                     controller: _controller,
                     keyboardType: TextInputType.number,
-                    maxLength: 4,
-                    errorText: _hasError ? l10n.receiverEnterCodeError : null,
+                    maxLength: 6,
                     autofocus: true,
-                    onChanged: (_) => setState(() {}),
+                    errorText: _errorMessage,
+                    onChanged: (_) {
+                      setState(() {
+                        _errorMessage = null;
+                      });
+                    },
                   ),
                   const SizedBox(height: SsSpacing.xl),
                   SsButton.primary(
-                    label: l10n.receiverConfirmCollectedCta,
+                    label: 'Verify pickup',
                     expand: true,
                     isLoading: _checking,
-                    onPressed: _controller.text.length == 4 && !_checking
+                    onPressed: _controller.text.length == 6 && !_checking
                         ? _submit
                         : null,
                   ),
