@@ -8,6 +8,7 @@ import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
 import '../../../../shared/widgets/connectivity_banner.dart';
 import '../../domain/donation.dart';
+import '../controllers/donation_providers.dart';
 
 List<String> _steps(AppLocalizations l10n) => [
       l10n.donorCreateStepDetails,
@@ -103,6 +104,9 @@ class _CreateDonationScreenState
           );
 
       if (!mounted) return;
+
+      // Refresh the donor's donations after successful creation.
+      ref.invalidate(donorDonationsProvider);
 
       context.goNamed(
         'donorDonationDetail',
