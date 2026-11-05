@@ -1,5 +1,13 @@
 
+const mongoose = require('mongoose');
 const User = require('../models/User');
+const Donation = require('../models/Donation');
+const Allocation = require('../models/Allocation');
+
+const NGO_LIST_FIELDS =
+  'name email ngoDetails.organizationName ngoDetails.registrationNumber ' +
+  'ngoDetails.documentUrl ngoDetails.verificationStatus ' +
+  'ngoDetails.rejectionReason createdAt updatedAt';
 
 // GET /api/admin/ngos/pending
 // Fetch all NGOs awaiting verification.
@@ -31,7 +39,7 @@ exports.approveNGO = async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!require('mongoose').Types.ObjectId.isValid(id)) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         message: 'Invalid NGO ID.',
       });
@@ -84,7 +92,7 @@ exports.rejectNGO = async (req, res) => {
         ? req.body.reason.trim()
         : '';
 
-    if (!require('mongoose').Types.ObjectId.isValid(id)) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         message: 'Invalid NGO ID.',
       });
@@ -129,6 +137,204 @@ exports.rejectNGO = async (req, res) => {
 
     return res.status(500).json({
       message: 'Unable to reject NGO application.',
+    });
+  }
+};
+
+// GET /api/admin/ngos?status=pending|verified|rejected
+// List NGOs, optionally filtered by verification status.
+exports.getNGOs = async (req, res) => {
+  try {
+    const { status } = req.query;
+    const allowedStatuses = ['pending', 'verified', 'rejected'];
+
+    const filter = { role: 'ngo' };
+
+    if (status) {
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({
+          message: 'Invalid verification status.',
+          allowedStatuses,
+        });
+      }
+
+      filter['ngoDetails.verificationStatus'] = status;
+    }
+
+    const ngos = await User.find(filter)
+      .select(NGO_LIST_FIELDS)
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      count: ngos.length,
+      ngos,
+    });
+  } catch (error) {
+    console.error('Fetch NGOs error:', error);
+
+    return res.status(500).json({
+      message: 'Unable to fetch NGOs.',
+    });
+  }
+};
+
+// GET /api/admin/stats
+// Platform overview counts for the admin dashboard.
+exports.getStats = async (req, res) => {
+  try {
+    const [
+      donors,
+      ngosPending,
+      ngosVerified,
+      ngosRejected,
+      donationsTotal,
+      donationsAvailable,
+      donationsClaimed,
+      donationsCollected,
+      donationsCancelled,
+      requestsActive,
+      requestsCollected,
+      servedAgg,
+    ] = await Promise.all([
+      User.countDocuments({ role: 'donor' }),
+      User.countDocuments({ role: 'ngo', 'ngoDetails.verificationStatus': 'pending' }),
+      User.countDocuments({ role: 'ngo', 'ngoDetails.verificationStatus': 'verified' }),
+      User.countDocuments({ role: 'ngo', 'ngoDetails.verificationStatus': 'rejected' }),
+      Donation.countDocuments({}),
+      Donation.countDocuments({ status: 'available' }),
+      Donation.countDocuments({ status: 'claimed' }),
+      Donation.countDocuments({ status: 'collected' }),
+      Donation.countDocuments({ status: 'cancelled' }),
+      Allocation.countDocuments({
+        status: { $in: ['queued', 'awaiting_ngo_confirmation', 'pending_donor', 'approved'] },
+      }),
+      Allocation.countDocuments({ status: 'collected' }),
+      Allocation.aggregate([
+        { $match: { status: 'collected' } },
+        { $group: { _id: null, total: { $sum: '$allocatedPortions' } } },
+      ]),
+    ]);
+
+    return res.status(200).json({
+      users: {
+        donors,
+        ngosPending,
+        ngosVerified,
+        ngosRejected,
+      },
+      donations: {
+        total: donationsTotal,
+        available: donationsAvailable,
+        claimed: donationsClaimed,
+        collected: donationsCollected,
+        cancelled: donationsCancelled,
+      },
+      requests: {
+        active: requestsActive,
+        collected: requestsCollected,
+      },
+      portionsServed: servedAgg[0]?.total || 0,
+    });
+  } catch (error) {
+    console.error('Admin stats error:', error);
+
+    return res.status(500).json({
+      message: 'Unable to fetch platform statistics.',
+    });
+  }
+};
+
+// GET /api/admin/users?role=donor|ngo
+// List donor and NGO accounts (never returns passwords).
+exports.getUsers = async (req, res) => {
+  try {
+    const { role } = req.query;
+
+    const filter = { role: { $in: ['donor', 'ngo'] } };
+
+    if (role) {
+      if (!['donor', 'ngo'].includes(role)) {
+        return res.status(400).json({
+          message: 'Invalid role filter.',
+        });
+      }
+
+      filter.role = role;
+    }
+
+    const users = await User.find(filter)
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .limit(200);
+
+    return res.status(200).json({
+      count: users.length,
+      users,
+    });
+  } catch (error) {
+    console.error('Admin users error:', error);
+
+    return res.status(500).json({
+      message: 'Unable to fetch users.',
+    });
+  }
+};
+
+// GET /api/admin/donations?status=available|claimed|collected|cancelled
+// Recent donations across all donors.
+exports.getDonations = async (req, res) => {
+  try {
+    const { status } = req.query;
+    const allowedStatuses = ['available', 'claimed', 'collected', 'cancelled'];
+
+    const filter = {};
+
+    if (status) {
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({
+          message: 'Invalid donation status.',
+          allowedStatuses,
+        });
+      }
+
+      filter.status = status;
+    }
+
+    const donations = await Donation.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(200);
+
+    return res.status(200).json({
+      count: donations.length,
+      donations,
+    });
+  } catch (error) {
+    console.error('Admin donations error:', error);
+
+    return res.status(500).json({
+      message: 'Unable to fetch donations.',
+    });
+  }
+};
+
+// GET /api/admin/activity
+// Most recent donation requests across the platform (pickup codes hidden).
+exports.getActivity = async (req, res) => {
+  try {
+    const allocations = await Allocation.find({})
+      .populate('donationId', 'title donorName address')
+      .sort({ updatedAt: -1 })
+      .limit(50);
+
+    return res.status(200).json({
+      count: allocations.length,
+      allocations,
+    });
+  } catch (error) {
+    console.error('Admin activity error:', error);
+
+    return res.status(500).json({
+      message: 'Unable to fetch platform activity.',
     });
   }
 };
