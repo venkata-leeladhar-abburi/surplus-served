@@ -20,9 +20,11 @@ class ReceiverAllocation {
   final Donation donation;
 }
 
-/// Fetches approved allocations belonging to the logged-in NGO.
+/// Fetches every allocation (donation request) belonging to the logged-in
+/// NGO, in all statuses, newest first. Screens split them into active
+/// requests and history using `AllocationStatusView.isActive`.
 ///
-/// Unlike the old provider, this preserves the allocation ID and pickup code.
+/// The pickup code is only present while the allocation is `approved`.
 final receiverAllocationsProvider =
     FutureProvider<List<ReceiverAllocation>>((ref) async {
   final session = ref.watch(sessionProvider);
@@ -36,21 +38,15 @@ final receiverAllocationsProvider =
   final results = <ReceiverAllocation>[];
 
   for (final item in allocations) {
-    if (item['status']?.toString() != 'approved') continue;
-
     final donationData = item['donationId'];
 
-    if (donationData is! Map) {
-      throw Exception(
-        'Donation details were not included in the allocation response.',
-      );
-    }
+    // A donation can be missing if it was removed from the database;
+    // skip that allocation rather than failing the whole list.
+    if (donationData is! Map) continue;
 
     final allocation = Allocation.fromJson(item);
 
-    if (allocation.id.isEmpty || allocation.donationId.isEmpty) {
-      throw Exception('Invalid allocation information received.');
-    }
+    if (allocation.id.isEmpty || allocation.donationId.isEmpty) continue;
 
     final donation = _buildDonation(
       item,
@@ -71,13 +67,6 @@ final receiverAllocationsProvider =
   );
 
   return results;
-});
-
-/// Compatibility provider for existing screens that still expect donations.
-final receiverDonationsProvider = FutureProvider<List<Donation>>((ref) async {
-  final allocations = await ref.watch(receiverAllocationsProvider.future);
-
-  return allocations.map((item) => item.donation).toList();
 });
 
 Future<List<Map<String, dynamic>>> _fetchMyAllocations(
@@ -130,7 +119,13 @@ Donation _buildDonation(
       ? Map<String, dynamic>.from(addressData)
       : <String, dynamic>{};
 
-  final portions = _toInt(allocationData['allocatedPortions']);
+  final allocatedPortions = _toInt(allocationData['allocatedPortions']);
+  final portions = allocatedPortions > 0
+      ? allocatedPortions
+      : _toInt(
+          allocationData['offeredPortions'] ??
+              allocationData['requestedPortions'],
+        );
 
   return Donation(
     id: donationData['_id']?.toString() ?? '',
@@ -139,7 +134,7 @@ Donation _buildDonation(
     title: donationData['title']?.toString() ?? 'Food donation',
     description: donationData['description']?.toString(),
     portions: portions,
-    status: DonationStatus.allocated,
+    status: _donationStatusFor(allocationData['status']?.toString()),
     pickupWindowStart: _toDate(donationData['pickupWindowStart']),
     pickupWindowEnd: _toDate(donationData['pickupWindowEnd']),
     address: PickupAddress(
@@ -155,6 +150,18 @@ Donation _buildDonation(
     allocatedToNgoName: allocationData['ngoName']?.toString(),
   );
 }
+
+/// Approximate donation status from this NGO's point of view, used by
+/// screens that still display a `DonationStatus`.
+DonationStatus _donationStatusFor(String? allocationStatus) =>
+    switch (allocationStatus) {
+      'approved' => DonationStatus.allocated,
+      'collected' => DonationStatus.collected,
+      'rejected' => DonationStatus.rejected,
+      'declined' || 'cancelled' => DonationStatus.cancelled,
+      'expired' => DonationStatus.unfulfilled,
+      _ => DonationStatus.live,
+    };
 
 int _toInt(dynamic value) {
   if (value is num) return value.toInt();

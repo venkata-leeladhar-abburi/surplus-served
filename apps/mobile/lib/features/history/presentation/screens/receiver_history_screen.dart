@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
-import '../../../../shared/utils/status_mapper.dart';
+import '../../../../shared/utils/allocation_status_mapper.dart';
 import '../../../../shared/widgets/async_error_view.dart';
 import '../../../../shared/widgets/role_scaffold.dart';
 import '../../../../shared/widgets/role_tabs.dart';
@@ -16,21 +16,24 @@ class ReceiverHistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final donationsAsync = ref.watch(receiverDonationsProvider);
+    final allocationsAsync = ref.watch(receiverAllocationsProvider);
 
     return RoleScaffold(
       currentIndex: 2,
       tabs: receiverTabs(l10n),
       appBarTitle: l10n.historyTitle,
-      body: donationsAsync.when(
+      body: allocationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => AsyncErrorView(
           error: err,
-          onRetry: () => ref.invalidate(receiverDonationsProvider),
+          onRetry: () => ref.invalidate(receiverAllocationsProvider),
         ),
-        data: (allDonations) {
-          final history = allDonations
-              .where((d) => !d.status.isActive)
+        data: (allAllocations) {
+          // Finished requests: collected, rejected, declined, expired...
+          final history = allAllocations
+              .where((item) => !AllocationStatusView.isActive(
+                    item.allocation.status,
+                  ))
               .toList();
           if (history.isEmpty) {
             return Center(
@@ -46,7 +49,8 @@ class ReceiverHistoryScreen extends ConsumerWidget {
             itemCount: history.length,
             separatorBuilder: (_, _) => const SizedBox(height: SsSpacing.md),
             itemBuilder: (context, i) {
-              final d = history[i];
+              final d = history[i].donation;
+              final status = history[i].allocation.status;
               return SsListTile(
                 title: d.title,
                 subtitle: l10n.historyReceiverSubtitle(
@@ -55,8 +59,8 @@ class ReceiverHistoryScreen extends ConsumerWidget {
                   d.createdAt.month,
                 ),
                 trailing: SsStatusBadge(
-                  status: d.status.ssStatus,
-                  label: d.status.label(l10n),
+                  status: AllocationStatusView.ssStatus(status),
+                  label: AllocationStatusView.label(status),
                   dense: true,
                 ),
                 onTap: () => context.pushNamed(

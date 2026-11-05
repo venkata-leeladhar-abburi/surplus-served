@@ -11,6 +11,8 @@ import '../../../../shared/widgets/async_error_view.dart';
 import '../../../../shared/widgets/connectivity_banner.dart';
 import '../../../donation/domain/donation_status.dart';
 import '../../../donation/presentation/controllers/donation_providers.dart';
+import '../controllers/discovery_providers.dart';
+import '../controllers/receiver_donations_providers.dart';
 
 class DonationDetailScreen extends ConsumerStatefulWidget {
   const DonationDetailScreen({super.key, required this.donationId});
@@ -42,6 +44,10 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
       return;
     }
 
+    final requestedPortions = await _askPortions(availablePortions);
+
+    if (requestedPortions == null || !mounted) return;
+
     setState(() => _requesting = true);
 
     try {
@@ -49,12 +55,14 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
             donationId: widget.donationId,
             ngoId: session.userId,
             ngoName: session.name,
-            requestedPortions: availablePortions,
+            requestedPortions: requestedPortions,
           );
 
       if (!mounted) return;
 
       ref.invalidate(donationByIdProvider(widget.donationId));
+      ref.invalidate(receiverAllocationsProvider);
+      ref.invalidate(receiverFeedProvider);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -76,6 +84,60 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
         setState(() => _requesting = false);
       }
     }
+  }
+
+  /// Asks how many portions to request (1 to [maxPortions]).
+  /// Returns null if the NGO cancels.
+  Future<int?> _askPortions(int maxPortions) {
+    final controller = TextEditingController(text: '$maxPortions');
+
+    return showDialog<int>(
+      context: context,
+      builder: (dialogContext) {
+        String? error;
+
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            void submit() {
+              final value = int.tryParse(controller.text.trim());
+
+              if (value == null || value < 1 || value > maxPortions) {
+                setDialogState(
+                  () => error = 'Enter a number from 1 to $maxPortions.',
+                );
+                return;
+              }
+
+              Navigator.of(dialogContext).pop(value);
+            }
+
+            return AlertDialog(
+              title: const Text('How many portions?'),
+              content: TextField(
+                controller: controller,
+                autofocus: true,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  helperText: '$maxPortions portion(s) available',
+                  errorText: error,
+                ),
+                onSubmitted: (_) => submit(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: submit,
+                  child: const Text('Request'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ).whenComplete(controller.dispose);
   }
 
   @override
@@ -155,7 +217,9 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
                       Row(
                         children: [
                           SsTag(
-                            label: l10n.commonPortionsLabel(donation.portions),
+                            label: l10n.commonPortionsLabel(
+                              donation.remainingPortions ?? donation.portions,
+                            ),
                             icon: SsIcons.meals,
                           ),
                           const SizedBox(width: SsSpacing.sm),
@@ -188,7 +252,10 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
                           isLoading: _requesting,
                           onPressed: _requesting
                               ? null
-                              : () => _request(donation.portions),
+                              : () => _request(
+                                    donation.remainingPortions ??
+                                        donation.portions,
+                                  ),
                         ),
                     ],
                   ),
