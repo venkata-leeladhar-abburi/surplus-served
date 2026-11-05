@@ -55,15 +55,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           break;
 
         case UserRole.admin:
-          // Admin dashboard navigation will be integrated separately.
-          context.go('/login');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Admin login successful. Admin dashboard integration is pending.',
-              ),
-            ),
-          );
+          context.go('/admin');
           break;
       }
     } catch (e) {

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/admin/presentation/screens/admin_dashboard_screen.dart';
 import '../../features/auth/domain/user_role.dart';
 import '../../features/auth/presentation/screens/otp_screen.dart';
 import '../../features/auth/presentation/screens/phone_screen.dart';
@@ -29,6 +30,8 @@ abstract final class AppRoute {
   static const roleSelect = 'roleSelect';
   static const phone = 'phone';
   static const otp = 'otp';
+
+  static const adminDashboard = 'adminDashboard';
 
   static const donorDashboard = 'donorDashboard';
   static const donorCreate = 'donorCreate';
@@ -67,18 +70,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         return loggingIn ? null : '/';
       }
 
-      if (session.role == UserRole.donor &&
-          state.matchedLocation.startsWith('/receiver')) {
-        return '/donor';
-      }
+      // Each role has its own area; keep users inside it.
+      final home = switch (session.role) {
+        UserRole.donor => '/donor',
+        UserRole.ngo => '/receiver',
+        UserRole.admin => '/admin',
+      };
 
-      if (session.role == UserRole.ngo &&
-          state.matchedLocation.startsWith('/donor')) {
-        return '/receiver';
-      }
-
-      if (loggingIn) {
-        return session.role == UserRole.donor ? '/donor' : '/receiver';
+      if (loggingIn || !state.matchedLocation.startsWith(home)) {
+        return home;
       }
 
       return null;
@@ -112,6 +112,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/login',
         name: 'login',
         builder: (context, state) => const LoginScreen(),
+      ),
+
+      // Admin routes
+      GoRoute(
+        path: '/admin',
+        name: AppRoute.adminDashboard,
+        builder: (context, state) => const AdminDashboardScreen(),
       ),
 
       // Donor routes

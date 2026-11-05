@@ -9,6 +9,7 @@ import '../../../../core/providers.dart';
 import '../../../../shared/utils/status_mapper.dart';
 import '../../../../shared/widgets/async_error_view.dart';
 import '../../../../shared/widgets/connectivity_banner.dart';
+import '../../../../shared/widgets/text_input_dialog.dart';
 import '../../../donation/domain/donation_status.dart';
 import '../../../donation/presentation/controllers/donation_providers.dart';
 import '../controllers/discovery_providers.dart';
@@ -88,56 +89,23 @@ class _DonationDetailScreenState extends ConsumerState<DonationDetailScreen> {
 
   /// Asks how many portions to request (1 to [maxPortions]).
   /// Returns null if the NGO cancels.
-  Future<int?> _askPortions(int maxPortions) {
-    final controller = TextEditingController(text: '$maxPortions');
-
-    return showDialog<int>(
-      context: context,
-      builder: (dialogContext) {
-        String? error;
-
-        return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            void submit() {
-              final value = int.tryParse(controller.text.trim());
-
-              if (value == null || value < 1 || value > maxPortions) {
-                setDialogState(
-                  () => error = 'Enter a number from 1 to $maxPortions.',
-                );
-                return;
-              }
-
-              Navigator.of(dialogContext).pop(value);
-            }
-
-            return AlertDialog(
-              title: const Text('How many portions?'),
-              content: TextField(
-                controller: controller,
-                autofocus: true,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  helperText: '$maxPortions portion(s) available',
-                  errorText: error,
-                ),
-                onSubmitted: (_) => submit(),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: submit,
-                  child: const Text('Request'),
-                ),
-              ],
-            );
-          },
-        );
+  Future<int?> _askPortions(int maxPortions) async {
+    final text = await showTextInputDialog(
+      context,
+      title: 'How many portions?',
+      helperText: '$maxPortions portion(s) available',
+      initialText: '$maxPortions',
+      keyboardType: TextInputType.number,
+      confirmLabel: 'Request',
+      validator: (v) {
+        final value = int.tryParse(v);
+        return value == null || value < 1 || value > maxPortions
+            ? 'Enter a number from 1 to $maxPortions.'
+            : null;
       },
-    ).whenComplete(controller.dispose);
+    );
+
+    return text == null ? null : int.tryParse(text);
   }
 
   @override
