@@ -195,7 +195,13 @@ class HttpAuthRepository implements AuthRepository {
       final data = jsonDecode(response.body);
 
       if (data is Map<String, dynamic>) {
-        return data['message']?.toString() ?? fallbackMessage;
+        final message = data['message']?.toString() ?? fallbackMessage;
+        final reason = data['rejectionReason']?.toString();
+
+        // Rejected NGOs see why the admin rejected them.
+        return reason != null && reason.isNotEmpty
+            ? '$message\nReason: $reason'
+            : message;
       }
     } catch (_) {
       // Use fallback message for invalid JSON.
