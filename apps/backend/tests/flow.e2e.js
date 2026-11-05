@@ -234,8 +234,36 @@ step('NGO cannot approve its own request', async () => {
   assert.strictEqual(r.status, 403);
 });
 
+step('approval requires full address and valid phone', async () => {
+  const none = await call('POST', `/donations/allocations/${ctx.a1}/approve`, { token: ctx.donor, body: {} });
+  assert.strictEqual(none.status, 400);
+  const badPhone = await call('POST', `/donations/allocations/${ctx.a1}/approve`, {
+    token: ctx.donor, body: { pickupAddress: 'Flat 4, Green Towers, Ameerpet', contactPhone: '12ab' },
+  });
+  assert.strictEqual(badPhone.status, 400);
+  assert.match(badPhone.json.message, /phone/);
+  const shortAddr = await call('POST', `/donations/allocations/${ctx.a1}/approve`, {
+    token: ctx.donor, body: { pickupAddress: 'Ameerpet', contactPhone: '9876543210' },
+  });
+  assert.strictEqual(shortAddr.status, 400);
+  // Nothing was approved by the failed attempts.
+  const n1 = await call('GET', '/donations/my-allocations', { token: ctx.ngo1 });
+  assert.strictEqual(n1.json.allocations.find((a) => a._id === ctx.a1).status, 'pending_donor');
+});
+
+step('NGO2 cannot see pickup details before it is approved', async () => {
+  const n2 = await call('GET', '/donations/my-allocations', { token: ctx.ngo2 });
+  for (const a of n2.json.allocations) {
+    assert.strictEqual(a.pickupAddress, null);
+    assert.strictEqual(a.contactPhone, null);
+  }
+});
+
 step('donor approves NGO1 -> NGO2 gets reduced offer of 4', async () => {
-  const r = await call('POST', `/donations/allocations/${ctx.a1}/approve`, { token: ctx.donor });
+  const r = await call('POST', `/donations/allocations/${ctx.a1}/approve`, {
+    token: ctx.donor,
+    body: { pickupAddress: 'Flat 4, Green Towers, Ameerpet, Hyderabad', contactPhone: '98765 43210' },
+  });
   assert.strictEqual(r.status, 200, JSON.stringify(r.json));
   assert.strictEqual(r.json.allocation.allocatedPortions, 6);
   const n2 = await call('GET', '/donations/my-allocations', { token: ctx.ngo2 });
@@ -252,6 +280,12 @@ step('NGO1 sees its pickup code', async () => {
   const mine = r.json.allocations.find((a) => a._id === ctx.a1);
   assert.match(mine.pickupCode, /^\d{6}$/);
   ctx.code1 = mine.pickupCode;
+  assert.strictEqual(mine.pickupAddress, 'Flat 4, Green Towers, Ameerpet, Hyderabad');
+  assert.strictEqual(mine.contactPhone, '9876543210');
+  assert.strictEqual(mine.contactName, 'Donor One');
+  // The other NGO never sees NGO1's pickup details.
+  const n2 = await call('GET', '/donations/my-allocations', { token: ctx.ngo2 });
+  assert.ok(n2.json.allocations.every((a) => a._id !== ctx.a1));
 });
 
 step('NGO2 accepts reduced offer, donor rejects it', async () => {
@@ -312,7 +346,11 @@ step('admin lists users, donations and activity without secrets', async () => {
   assert.strictEqual(d.json.count, 3);
   const a = await call('GET', '/admin/activity', { token: ctx.admin });
   assert.strictEqual(a.json.count, 2);
-  for (const x of a.json.allocations) assert.strictEqual(x.pickupCode, undefined);
+  for (const x of a.json.allocations) {
+    assert.strictEqual(x.pickupCode, undefined);
+    assert.strictEqual(x.contactPhone, undefined);
+    assert.strictEqual(x.pickupAddress, undefined);
+  }
   const bad = await call('GET', '/admin/ngos?status=weird', { token: ctx.admin });
   assert.strictEqual(bad.status, 400);
 });

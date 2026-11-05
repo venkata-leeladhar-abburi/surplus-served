@@ -388,6 +388,32 @@ exports.approveAllocation = async (req, res) => {
       });
     }
 
+    // Full pickup address and contact number for the approved NGO.
+    const pickupAddress =
+      typeof req.body.pickupAddress === 'string'
+        ? req.body.pickupAddress.trim()
+        : '';
+    const contactPhone =
+      typeof req.body.contactPhone === 'string'
+        ? req.body.contactPhone.replace(/[\s-]/g, '')
+        : '';
+    const contactName =
+      typeof req.body.contactName === 'string' && req.body.contactName.trim()
+        ? req.body.contactName.trim().slice(0, 100)
+        : req.user.name;
+
+    if (pickupAddress.length < 10 || pickupAddress.length > 300) {
+      return res.status(400).json({
+        message: 'Please enter the complete pickup address (10-300 characters).',
+      });
+    }
+
+    if (!/^\+?\d{10,13}$/.test(contactPhone)) {
+      return res.status(400).json({
+        message: 'Please enter a valid contact phone number (10-13 digits).',
+      });
+    }
+
     let approvedAllocation = null;
 
     await session.withTransaction(async () => {
@@ -467,6 +493,9 @@ exports.approveAllocation = async (req, res) => {
             status: 'approved',
             allocatedPortions: quantity,
             pickupCode,
+            pickupAddress,
+            contactName,
+            contactPhone,
             donorDecisionAt: new Date(),
           },
         },
@@ -492,6 +521,9 @@ exports.approveAllocation = async (req, res) => {
         ngoName: approvedAllocation.ngoName,
         allocatedPortions: approvedAllocation.allocatedPortions,
         status: approvedAllocation.status,
+        pickupAddress: approvedAllocation.pickupAddress,
+        contactName: approvedAllocation.contactName,
+        contactPhone: approvedAllocation.contactPhone,
       },
     });
   } catch (error) {

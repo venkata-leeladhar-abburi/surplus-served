@@ -322,6 +322,8 @@ exports.getDonations = async (req, res) => {
 exports.getActivity = async (req, res) => {
   try {
     const allocations = await Allocation.find({})
+      // Donor phone/address are only for the matched NGO.
+      .select('-pickupAddress -contactName -contactPhone')
       .populate('donationId', 'title donorName address')
       .sort({ updatedAt: -1 })
       .limit(50);
