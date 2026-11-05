@@ -9,9 +9,9 @@ const allowedMimeTypes = [
 
 const fileFilter = (req, file, cb) => {
   if (!allowedMimeTypes.includes(file.mimetype)) {
-    return cb(
-      new Error('Only JPG, PNG and WEBP images are allowed.')
-    );
+    const error = new Error('Only JPG, PNG and WEBP images are allowed.');
+    error.status = 400;
+    return cb(error);
   }
 
   cb(null, true);

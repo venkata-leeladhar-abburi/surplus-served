@@ -4,6 +4,12 @@ const Donation = require('../models/Donation');
 const Allocation = require('../models/Allocation');
 const cloudinary = require('../config/cloudinary');
 
+const FOOD_CATEGORIES = Donation.schema.path('foodCategory').enumValues;
+const DIET_TYPES = ['veg', 'non_veg'];
+
+// Escape user text before using it inside a MongoDB regex.
+const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // POST /api/donations
 // Create a donation with an optional food image
 exports.createDonation = async (req, res) => {
@@ -17,6 +23,9 @@ exports.createDonation = async (req, res) => {
       pickupWindowStart,
       pickupWindowEnd,
       address,
+      expiresAt,
+      foodCategory,
+      dietType,
     } = req.body;
 
     let parsedAddress = address;
@@ -63,6 +72,45 @@ exports.createDonation = async (req, res) => {
       });
     }
 
+    // Food safety: the food must stay safe until the pickup window ends.
+    const expiry = new Date(expiresAt);
+
+    if (!expiresAt || Number.isNaN(expiry.getTime())) {
+      return res.status(400).json({
+        message: 'Please provide when the food expires (expiresAt).',
+      });
+    }
+
+    if (expiry < end) {
+      return res.status(400).json({
+        message:
+          'The food must stay safe to eat until the end of the pickup window.',
+      });
+    }
+
+    const category =
+      typeof foodCategory === 'string' && foodCategory.trim()
+        ? foodCategory.trim()
+        : 'other';
+
+    if (!FOOD_CATEGORIES.includes(category)) {
+      return res.status(400).json({
+        message: 'Invalid food category.',
+        allowedCategories: FOOD_CATEGORIES,
+      });
+    }
+
+    const diet =
+      typeof dietType === 'string' && dietType.trim()
+        ? dietType.trim()
+        : null;
+
+    if (diet && !DIET_TYPES.includes(diet)) {
+      return res.status(400).json({
+        message: 'Invalid diet type. Use veg or non_veg.',
+      });
+    }
+
     let imageUrl = null;
     let imagePublicId = null;
 
@@ -106,6 +154,9 @@ exports.createDonation = async (req, res) => {
 
       pickupWindowStart: start,
       pickupWindowEnd: end,
+      expiresAt: expiry,
+      foodCategory: category,
+      dietType: diet,
       address: {
         locality: parsedAddress.locality.trim(),
       },
@@ -149,22 +200,26 @@ exports.getDonations = async (req, res) => {
 
     const { search, locality } = req.query;
 
+    const now = new Date();
+
     const filter = {
       status: 'available',
       remainingPortions: { $gt: 0 },
-      pickupWindowEnd: { $gt: new Date() },
+      pickupWindowEnd: { $gt: now },
+      // Hide expired food. Older donations have no expiry recorded.
+      $or: [{ expiresAt: null }, { expiresAt: { $gt: now } }],
     };
 
-    if (search && search.trim()) {
+    if (typeof search === 'string' && search.trim()) {
       filter.title = {
-        $regex: search.trim(),
+        $regex: escapeRegex(search.trim()),
         $options: 'i',
       };
     }
 
-    if (locality && locality.trim()) {
+    if (typeof locality === 'string' && locality.trim()) {
       filter['address.locality'] = {
-        $regex: locality.trim(),
+        $regex: escapeRegex(locality.trim()),
         $options: 'i',
       };
     }

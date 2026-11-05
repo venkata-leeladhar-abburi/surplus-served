@@ -656,7 +656,7 @@ exports.getMyAllocations = async (req, res) => {
       .select('+pickupCode')
       .populate(
         'donationId',
-        'title description imageUrl address pickupWindowStart pickupWindowEnd donorName portions remainingPortions status'
+        'title description imageUrl address pickupWindowStart pickupWindowEnd donorName portions remainingPortions status expiresAt foodCategory dietType'
       )
       .sort({ createdAt: -1 });
 
@@ -715,7 +715,7 @@ exports.getMyDonorAllocations = async (req, res) => {
     const allocations = await Allocation.find(filter)
       .populate(
         'donationId',
-        'title description imageUrl address pickupWindowStart pickupWindowEnd donorName portions remainingPortions status'
+        'title description imageUrl address pickupWindowStart pickupWindowEnd donorName portions remainingPortions status expiresAt foodCategory dietType'
       )
       .sort({ createdAt: -1 });
 
@@ -921,7 +921,7 @@ exports.getMyDonorAllocations = async (req, res) => {
     const allocations = await Allocation.find(filter)
       .populate(
         'donationId',
-        'title description imageUrl address pickupWindowStart pickupWindowEnd donorName portions remainingPortions status'
+        'title description imageUrl address pickupWindowStart pickupWindowEnd donorName portions remainingPortions status expiresAt foodCategory dietType'
       )
       .sort({ createdAt: -1 });
 

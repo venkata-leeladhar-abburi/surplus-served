@@ -130,11 +130,82 @@ step('donor creates a donation', async () => {
     body: {
       title: 'Veg biryani', description: 'Fresh', portions: 10,
       pickupWindowStart: start.toISOString(), pickupWindowEnd: end.toISOString(),
+      expiresAt: new Date(end.getTime() + 3600_000).toISOString(),
+      foodCategory: 'cooked_meal', dietType: 'veg',
       address: { locality: 'Ameerpet' },
     },
   });
   assert.strictEqual(r.status, 201, JSON.stringify(r.json));
   ctx.donation = r.json.donation._id;
+});
+
+step('donation stores expiry, category and diet', async () => {
+  const r = await call('GET', `/donations/${ctx.donation}`, { token: ctx.donor });
+  assert.strictEqual(r.status, 200);
+  assert.ok(r.json.expiresAt);
+  assert.strictEqual(r.json.foodCategory, 'cooked_meal');
+  assert.strictEqual(r.json.dietType, 'veg');
+});
+
+step('donation validation: expiry required, after pickup, valid category', async () => {
+  const start = new Date(Date.now() + 60_000);
+  const end = new Date(Date.now() + 3600_000);
+  const base = {
+    title: 'Rice', portions: 2, address: { locality: 'X' },
+    pickupWindowStart: start.toISOString(), pickupWindowEnd: end.toISOString(),
+  };
+  const noExpiry = await call('POST', '/donations', { token: ctx.donor, body: base });
+  assert.strictEqual(noExpiry.status, 400);
+  const early = await call('POST', '/donations', {
+    token: ctx.donor, body: { ...base, expiresAt: start.toISOString() },
+  });
+  assert.strictEqual(early.status, 400);
+  assert.match(early.json.message, /safe to eat/);
+  const badCat = await call('POST', '/donations', {
+    token: ctx.donor, body: { ...base, expiresAt: end.toISOString(), foodCategory: 'rocks' },
+  });
+  assert.strictEqual(badCat.status, 400);
+  const badDiet = await call('POST', '/donations', {
+    token: ctx.donor, body: { ...base, expiresAt: end.toISOString(), dietType: 'meat' },
+  });
+  assert.strictEqual(badDiet.status, 400);
+});
+
+step('donation with photo (multipart) stores imageUrl', async () => {
+  const start = new Date(Date.now() + 60_000);
+  const end = new Date(Date.now() + 3600_000);
+  const f = new FormData();
+  f.append('title', 'Samosas');
+  f.append('portions', '5');
+  f.append('pickupWindowStart', start.toISOString());
+  f.append('pickupWindowEnd', end.toISOString());
+  f.append('expiresAt', end.toISOString());
+  f.append('foodCategory', 'bakery');
+  f.append('address', JSON.stringify({ locality: 'Begumpet' }));
+  f.append('image', pngBlob(), 'food.png');
+  const r = await call('POST', '/donations', { token: ctx.donor, form: f });
+  assert.strictEqual(r.status, 201, JSON.stringify(r.json));
+  assert.match(r.json.donation.imageUrl, /food-donations/);
+  assert.strictEqual(r.json.donation.foodCategory, 'bakery');
+  ctx.photoDonation = r.json.donation._id;
+});
+
+step('wrong photo type returns 400 with a clear message', async () => {
+  const f = new FormData();
+  f.append('title', 'Bad');
+  f.append('image', new Blob(['hello'], { type: 'text/plain' }), 'x.txt');
+  const r = await call('POST', '/donations', { token: ctx.donor, form: f });
+  assert.strictEqual(r.status, 400);
+  assert.match(r.json.message, /JPG, PNG and WEBP/);
+});
+
+step('NGO feed search treats special characters as text', async () => {
+  const r = await call('GET', '/donations?search=' + encodeURIComponent('(((a+)+)+)$'), { token: ctx.ngo1 });
+  assert.strictEqual(r.status, 200);
+  assert.strictEqual(r.json.count, 0);
+  const ok = await call('GET', '/donations?search=biry', { token: ctx.ngo1 });
+  assert.strictEqual(ok.json.count, 1);
+  assert.ok(ok.json.donations[0].expiresAt);
 });
 
 step('NGO1 requests 6 portions -> pending_donor', async () => {
@@ -210,7 +281,7 @@ step('a fresh donation can be cancelled by its donor only', async () => {
   const end = new Date(Date.now() + 3600_000);
   const d = await call('POST', '/donations', {
     token: ctx.donor,
-    body: { title: 'Bread', portions: 3, pickupWindowStart: new Date().toISOString(), pickupWindowEnd: end.toISOString(), address: { locality: 'Kukatpally' } },
+    body: { title: 'Bread', portions: 3, pickupWindowStart: new Date().toISOString(), pickupWindowEnd: end.toISOString(), expiresAt: end.toISOString(), address: { locality: 'Kukatpally' } },
   });
   const notMine = await call('PATCH', `/donations/${d.json.donation._id}/cancel`, { token: ctx.ngo1 });
   assert.strictEqual(notMine.status, 403);
@@ -226,7 +297,7 @@ step('admin stats reflect the activity', async () => {
   assert.strictEqual(r.json.users.donors, 1);
   assert.strictEqual(r.json.users.ngosVerified, 2);
   assert.strictEqual(r.json.users.ngosRejected, 1);
-  assert.strictEqual(r.json.donations.total, 2);
+  assert.strictEqual(r.json.donations.total, 3);
   assert.strictEqual(r.json.donations.cancelled, 1);
   assert.strictEqual(r.json.requests.collected, 1);
   assert.strictEqual(r.json.portionsServed, 6);
@@ -238,7 +309,7 @@ step('admin lists users, donations and activity without secrets', async () => {
   assert.strictEqual(u.json.count, 4); // donor + 3 NGOs, admin excluded
   for (const x of u.json.users) assert.strictEqual(x.password, undefined);
   const d = await call('GET', '/admin/donations', { token: ctx.admin });
-  assert.strictEqual(d.json.count, 2);
+  assert.strictEqual(d.json.count, 3);
   const a = await call('GET', '/admin/activity', { token: ctx.admin });
   assert.strictEqual(a.json.count, 2);
   for (const x of a.json.allocations) assert.strictEqual(x.pickupCode, undefined);
