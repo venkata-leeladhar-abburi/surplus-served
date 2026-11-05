@@ -145,9 +145,9 @@ Donation _buildDonation(
     pickupWindowEnd: _toDate(donationData['pickupWindowEnd']),
     address: PickupAddress(
       locality: address['locality']?.toString() ?? '',
-      exactLine: address['exactLine']?.toString(),
-      contactName: address['contactName']?.toString(),
-      contactPhone: address['contactPhone']?.toString(),
+      exactLine: allocationData['pickupAddress']?.toString(),
+      contactName: allocationData['contactName']?.toString(),
+      contactPhone: allocationData['contactPhone']?.toString(),
       latitude: (address['latitude'] as num?)?.toDouble(),
       longitude: (address['longitude'] as num?)?.toDouble(),
     ),

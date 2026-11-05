@@ -12,6 +12,9 @@ class Allocation {
     this.offeredPortions,
     this.allocatedPortions = 0,
     this.pickupCode,
+    this.pickupAddress,
+    this.contactName,
+    this.contactPhone,
     this.collectedAt,
   });
 
@@ -31,6 +34,12 @@ class Allocation {
   /// Present in the NGO allocations response only.
   /// Never expose this value in the donor's allocation response.
   final String? pickupCode;
+
+  /// Full pickup address and donor contact, set when the donor approves.
+  /// Only the donor and the approved NGO receive these.
+  final String? pickupAddress;
+  final String? contactName;
+  final String? contactPhone;
 
   final DateTime createdAt;
   final DateTime? collectedAt;
@@ -59,6 +68,9 @@ class Allocation {
           : _toInt(json['offeredPortions']),
       allocatedPortions: _toInt(json['allocatedPortions']),
       pickupCode: json['pickupCode']?.toString(),
+      pickupAddress: json['pickupAddress']?.toString(),
+      contactName: json['contactName']?.toString(),
+      contactPhone: json['contactPhone']?.toString(),
       createdAt: _toDate(json['createdAt']),
       collectedAt: json['collectedAt'] == null
           ? null

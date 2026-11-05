@@ -135,8 +135,18 @@ class HttpAllocationRepository implements AllocationRepository {
   @override
   Future<void> approveAllocation({
     required String allocationId,
+    required String pickupAddress,
+    required String contactPhone,
+    String? contactName,
   }) async {
-    await _post('/allocations/$allocationId/approve');
+    await _post(
+      '/allocations/$allocationId/approve',
+      body: {
+        'pickupAddress': pickupAddress,
+        'contactPhone': contactPhone,
+        'contactName': ?contactName,
+      },
+    );
   }
 
   @override

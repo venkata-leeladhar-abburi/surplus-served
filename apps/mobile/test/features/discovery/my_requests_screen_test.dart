@@ -33,6 +33,9 @@ ReceiverAllocation _item(
   String? pickupCode,
   int requested = 10,
   int? offered,
+  String? pickupAddress,
+  String? contactPhone,
+  String? contactName,
 }) =>
     ReceiverAllocation(
       allocation: Allocation(
@@ -43,6 +46,9 @@ ReceiverAllocation _item(
         requestedPortions: requested,
         offeredPortions: offered,
         pickupCode: pickupCode,
+        pickupAddress: pickupAddress,
+        contactPhone: contactPhone,
+        contactName: contactName,
       ),
       donation: Donation(
         id: 'd$id',
@@ -116,6 +122,28 @@ void main() {
     expect(find.text('Meal 2'), findsOneWidget);
     expect(find.text('Awaiting donor'), findsOneWidget);
     expect(find.text('Meal 3'), findsNothing); // finished -> History tab
+  });
+
+  testWidgets('approved request shows the donor address and phone',
+      (tester) async {
+    await _pump(tester, [
+      _item(
+        '1',
+        'approved',
+        pickupCode: '123456',
+        pickupAddress: 'Flat 4, Green Towers, Ameerpet, Hyderabad',
+        contactPhone: '9876543210',
+        contactName: 'Ravi',
+      ),
+    ]);
+
+    expect(find.text('Pickup address'), findsOneWidget);
+    expect(
+      find.text('Flat 4, Green Towers, Ameerpet, Hyderabad'),
+      findsOneWidget,
+    );
+    expect(find.text('Ravi · 9876543210'), findsOneWidget);
+    expect(find.text('Call'), findsOneWidget);
   });
 
   testWidgets('NGO can accept a reduced-quantity offer', (tester) async {

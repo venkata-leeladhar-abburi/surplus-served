@@ -22,10 +22,16 @@ abstract class AllocationRepository {
     required bool accept,
   });
 
-  // Donor approves or rejects an NGO allocation.
+  // Donor approves an NGO allocation and shares the full pickup address
+  // and a contact phone number with that NGO.
   Future<void> approveAllocation({
     required String allocationId,
+    required String pickupAddress,
+    required String contactPhone,
+    String? contactName,
   });
+
+  // Donor rejects an NGO allocation.
 
   Future<void> rejectAllocation({
     required String allocationId,

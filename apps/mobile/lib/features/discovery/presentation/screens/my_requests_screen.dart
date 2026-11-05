@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ss_design_system/ss_design_system.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/providers.dart';
@@ -10,6 +11,7 @@ import '../../../../shared/utils/allocation_status_mapper.dart';
 import '../../../../shared/widgets/async_error_view.dart';
 import '../../../../shared/widgets/role_scaffold.dart';
 import '../../../../shared/widgets/role_tabs.dart';
+import '../../../allocation/domain/allocation.dart';
 import '../controllers/receiver_donations_providers.dart';
 
 /// The NGO's in-progress donation requests.
@@ -177,7 +179,14 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
             top: SsSpacing.sm,
           ),
           child: switch (status) {
-            'approved' => _buildPickupCode(allocation.pickupCode),
+            'approved' => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildPickupDetails(allocation),
+                  const SizedBox(height: SsSpacing.sm),
+                  _buildPickupCode(allocation.pickupCode),
+                ],
+              ),
             'awaiting_ngo_confirmation' => _buildOfferActions(item),
             'pending_donor' => _hint(
                 'Waiting for the donor to approve your request for '
@@ -241,6 +250,87 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  Future<void> _call(String phone) async {
+    final uri = Uri(scheme: 'tel', path: phone);
+    final opened = await launchUrl(uri);
+
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open the dialer. Call $phone.')),
+      );
+    }
+  }
+
+  /// Full address and donor contact, shared by the donor on approval.
+  Widget _buildPickupDetails(Allocation allocation) {
+    final c = context.ssColors;
+    final address = allocation.pickupAddress;
+    final phone = allocation.contactPhone;
+
+    if (address == null || address.isEmpty) {
+      return _hint(
+        'The donor approved before pickup details were added. '
+        'Contact the donor through the admin if needed.',
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(SsSpacing.md),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Pickup address',
+            style: SsTypeScale.small.copyWith(color: c.onSurfaceVariant),
+          ),
+          const SizedBox(height: 4),
+          SelectableText(
+            address,
+            style: SsTypeScale.body.copyWith(color: c.onSurface),
+          ),
+          if (phone != null && phone.isNotEmpty) ...[
+            const SizedBox(height: SsSpacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Contact',
+                        style: SsTypeScale.small.copyWith(
+                          color: c.onSurfaceVariant,
+                        ),
+                      ),
+                      SelectableText(
+                        [
+                          if (allocation.contactName != null)
+                            allocation.contactName!,
+                          phone,
+                        ].join(' · '),
+                        style: SsTypeScale.body.copyWith(color: c.onSurface),
+                      ),
+                    ],
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _call(phone),
+                  icon: const Icon(Icons.call_outlined),
+                  label: const Text('Call'),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 
